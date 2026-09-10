@@ -63,12 +63,34 @@ niri msg action load-config-file
 
 ---
 
-## 📦 Kerakli Dasturlar (Dependencies)
+## 📦 Kerakli Dasturlar (Distro boʻyicha oʻrnatish)
 
-Tizimda quyidagi paketlar oʻrnatilgan boʻlishi tavsiya etiladi (Debian/Ubuntu/Arch):
-* `niri`, `waybar`, `dunst`, `swaybg`, `swayidle`, `swaylock`, `wlogout`, `fuzzel`, `foot`
-* `grim`, `slurp`, `wl-clipboard`, `wf-recorder`, `brightnessctl`, `wireplumber` (`wpctl`)
-* `tesseract-ocr`, `python3`, `python3-gi`, `gir1.2-gtk-3.0`, `gir1.2-gtklayershell-0.1`
+Ushbu muhit faqat **Debian 12** bilan cheklanmagan — uni **Arch Linux**, **Fedora**, **Ubuntu 24.04+** yoki boshqa har qanday zamonaviy Linux distributiviga oʻrnatishingiz mumkin.
+
+### 1. Debian / Ubuntu (24.04+)
+```bash
+sudo apt update
+sudo apt install -y niri waybar dunst swaybg swayidle swaylock wlogout fuzzel foot \
+    grim slurp wl-clipboard wf-recorder brightnessctl wireplumber \
+    tesseract-ocr python3-gi gir1.2-gtk-3.0 gir1.2-gtklayershell-0.1 \
+    libwayland-client0 libxkbcommon0 gcc libwayland-dev libxkbcommon-dev
+```
+
+### 2. Arch Linux / Manjaro
+```bash
+sudo pacman -S --needed niri waybar dunst swaybg swayidle swaylock wlogout fuzzel foot \
+    grim slurp wl-clipboard wf-recorder brightnessctl wireplumber \
+    tesseract tesseract-data-eng python-gobject gtk3 gtk-layer-shell \
+    wayland libxkbcommon gcc
+```
+
+### 3. Fedora (40+)
+```bash
+sudo dnf install -y niri waybar dunst swaybg swayidle swaylock wlogout fuzzel foot \
+    grim slurp wl-clipboard wf-recorder brightnessctl wireplumber \
+    tesseract python3-gobject gtk3 gtk-layer-shell \
+    wayland-devel libxkbcommon-devel gcc
+```
 
 ---
 *Created by Husniddin.*
