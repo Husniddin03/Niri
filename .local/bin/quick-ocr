@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# ==============================================================================
+# Offline Screen OCR Text Extractor (Internetsiz tezkor matn ajratish)
+# ==============================================================================
+
+pkill -x slurp 2>/dev/null
+
+TMP_IMG=$(mktemp /tmp/ocr_XXXXXX.png)
+trap 'rm -f "$TMP_IMG"' EXIT
+
+GEO=$(slurp -d -c "#89b4faff" -b "#00000044" -w 2 2>/dev/null)
+[ -z "$GEO" ] && exit 0
+
+grim -g "$GEO" "$TMP_IMG" 2>/dev/null || exit 1
+[ ! -s "$TMP_IMG" ] && exit 1
+
+TEXT=$(/home/husniddin/.local/bin/tesseract "$TMP_IMG" stdout \
+    --tessdata-dir /home/husniddin/.local/share/tessdata \
+    -l eng+uzb+rus+uzb_cyrl 2>/dev/null | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+
+if [ -n "$TEXT" ]; then
+    echo -n "$TEXT" | wl-copy
+    SHORT=$(echo "$TEXT" | head -n 3 | cut -c 1-120)
+    notify-send "Matn nusxalandi (OCR) ✓" "$SHORT" -i accessories-text-editor -t 3500 -a "Offline OCR"
+else
+    notify-send "OCR Natijasi" "Belgilangan hududda matn topilmadi" -i dialog-warning -t 2500 -a "Offline OCR"
+fi

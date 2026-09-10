@@ -1,0 +1,113 @@
+{
+  "layer": "top",
+  "position": "top",
+  "mode": "hide",
+  "exclusive": false,
+  "passthrough": false,
+  "modifier-reset": "press",
+  "gtk-layer-shell": true,
+  "height": 10,
+  "modules-left": [
+    "custom/power",
+    "workspaces"
+  ],
+  "modules-center": [
+    "clock"
+  ],
+  "modules-right": [
+    "network",
+    "custom/net-speed",
+    "pulseaudio",
+    "backlight",
+    "cpu",
+    "memory",
+    "disk",
+    "temperature",
+    "battery"
+  ],
+  "workspaces": {
+    "format": "{icon}"
+  },
+  "custom/power": {
+    "format": "⏻",
+    "on-click": "/home/husniddin/.local/bin/wlogout-menu"
+  },
+  "clock": {
+    "format": "{:%H:%M  %d.%m.%y}"
+  },
+  "cpu": {
+    "interval": 2,
+    "format": "CPU: {usage}%",
+    "states": {
+      "warning": 70,
+      "critical": 90
+    }
+  },
+  "memory": {
+    "interval": 3,
+    "format": "RAM: {percentage}%",
+    "states": {
+      "warning": 70,
+      "critical": 90
+    }
+  },
+  "disk": {
+    "interval": 30,
+    "format": " {percentage_used}%",
+    "path": "/",
+    "states": {
+      "warning": 70,
+      "critical": 90
+    }
+  },
+  "backlight": {
+    "format": "{icon} {percent}%",
+    "format-icons": [
+      ""
+    ],
+    "on-click": "brightnessctl set +5%",
+    "on-click-right": "brightnessctl set 5%-"
+  },
+  "pulseaudio": {
+    "format": "{icon} {volume}%",
+    "format-icons": [
+      "",
+      "",
+      ""
+    ],
+    "on-click": "pavucontrol"
+  },
+  "network": {
+    "format-wifi": " {essid} ({signalStrength}%)",
+    "format-ethernet": "󰈀 {ipaddr}",
+    "format-disconnected": ""
+  },
+  "custom/net-speed": {
+    "exec": "~/.config/waybar/scripts/net-speed.sh",
+    "interval": 1
+  },
+  "battery": {
+    "interval": 10,
+    "states": {
+      "warning": 30,
+      "critical": 15
+    },
+    "format": "{icon} {capacity}%",
+    "format-charging": " {capacity}%",
+    "format-icons": [
+      "",
+      "",
+      "",
+      "",
+      ""
+    ]
+  },
+  "temperature": {
+    "hwmon-path": "/sys/class/thermal/thermal_zone8/temp",
+    "format": "{temperatureC}°C",
+    "states": {
+      "warning": 65,
+      "critical": 80
+    }
+  }
+}

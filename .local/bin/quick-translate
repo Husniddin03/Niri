@@ -1,0 +1,126 @@
+#!/usr/bin/env python3
+import os
+import sys
+import json
+import re
+import subprocess
+import tempfile
+import urllib.request
+import urllib.parse
+
+def notify(title, msg, timeout=4000, icon="accessories-text-editor"):
+    subprocess.run(["notify-send", title, msg, "-i", icon, "-t", str(timeout), "-a", "Quick Translate"], stderr=subprocess.DEVNULL)
+
+def get_api_key():
+    key = os.environ.get("GEMINI_API_KEY", "").strip()
+    if key:
+        return key
+    cfg_file = os.path.expanduser("~/.config/quick-ai/config.json")
+    if os.path.isfile(cfg_file):
+        try:
+            with open(cfg_file, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                k = data.get("providers", {}).get("gemini", {}).get("api_key", "").strip()
+                if k:
+                    return k
+        except Exception:
+            pass
+    bashrc = os.path.expanduser("~/.bashrc")
+    if os.path.isfile(bashrc):
+        try:
+            with open(bashrc, "r", encoding="utf-8") as f:
+                m = re.search(r'export\s+GEMINI_API_KEY=["\']?([^"\'\s]+)["\']?', f.read())
+                if m:
+                    return m.group(1).strip()
+        except Exception:
+            pass
+    return ""
+
+def translate_gemini(text, api_key):
+    model = "gemini-3.6-flash"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
+    prompt = (
+        "Quyidagi matnni tabiiy, to'g'ri va ravon o'zbek tiliga tarjima qilib ber. "
+        "Agar matn allaqachon o'zbek tilida bo'lsa, uni chiroyli tahrir qilib va inglizcha tarjimasini ham ber. "
+        "Faqat tarjimani qaytar, hech qanday boshqa izoh, salomlashish yoki belgilashlarsiz:\n\n" + text
+    )
+    payload = {
+        "contents": [{"parts": [{"text": prompt}]}],
+        "generationConfig": {"temperature": 0.2, "maxOutputTokens": 1024}
+    }
+    req = urllib.request.Request(
+        url,
+        data=json.dumps(payload).encode("utf-8"),
+        headers={"Content-Type": "application/json"}
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=12) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            return data["candidates"][0]["content"]["parts"][0]["text"].strip()
+    except Exception as e:
+        return f"[Tarjima xatosi: {e}]"
+
+def main():
+    subprocess.run(["pkill", "-x", "slurp"], stderr=subprocess.DEVNULL)
+    
+    # 1. Select region
+    proc = subprocess.run(
+        ["slurp", "-d", "-c", "#89b4faff", "-b", "#00000044", "-w", "2"],
+        stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True
+    )
+    geo = proc.stdout.strip()
+    if not geo:
+        return
+
+    with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
+        tmp_img = tmp.name
+
+    try:
+        # 2. Capture region
+        res = subprocess.run(["grim", "-g", geo, tmp_img], stderr=subprocess.DEVNULL)
+        if res.returncode != 0 or not os.path.exists(tmp_img) or os.path.getsize(tmp_img) == 0:
+            return
+
+        # 3. Check for QR / Barcode first
+        qr_proc = subprocess.run(
+            ["/home/husniddin/.local/bin/zbarimg", "-q", "--raw", tmp_img],
+            stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True
+        )
+        qr_text = qr_proc.stdout.strip()
+        if qr_text:
+            subprocess.run(["wl-copy"], input=qr_text, text=True)
+            notify("QR-kod o'qildi ✓ (Buferga olindi)", qr_text[:160], 5000, "dialog-information")
+            return
+
+        # 4. OCR via Tesseract
+        tess_bin = "/home/husniddin/.local/bin/tesseract"
+        tess_data = "/home/husniddin/.local/share/tessdata"
+        ocr_proc = subprocess.run(
+            [tess_bin, tmp_img, "stdout", "--tessdata-dir", tess_data, "-l", "eng+uzb+rus+uzb_cyrl"],
+            stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True
+        )
+        raw_text = ocr_proc.stdout.strip()
+        if not raw_text:
+            notify("Tarjimon", "Tanlangan hududda matn topilmadi.", 2500, "dialog-warning")
+            return
+
+        notify("Tarjima qilinmoqda...", raw_text[:80] + "...", 2000, "accessories-text-editor")
+
+        # 5. Translate
+        api_key = get_api_key()
+        if not api_key:
+            notify("Xatolik", "Gemini API kaliti topilmadi.", 4000, "dialog-error")
+            return
+
+        translated = translate_gemini(raw_text, api_key)
+        subprocess.run(["wl-copy"], input=translated, text=True)
+        
+        # Display translation preview
+        notify("Tarjima tayyor ✓ (Buferga nusxalandi)", f"Original:\n{raw_text[:70]}\n\nTarjima:\n{translated[:140]}", 6000, "accessories-text-editor")
+
+    finally:
+        if os.path.exists(tmp_img):
+            os.remove(tmp_img)
+
+if __name__ == "__main__":
+    main()

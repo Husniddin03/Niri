@@ -1,0 +1,51 @@
+# ==============================================================================
+# Swaylock Configuration — Obsidian Glass Theme
+# ==============================================================================
+
+# Fon rangi va rasmi
+color=0f1117
+scaling=fill
+
+# Indikator o'lchami va ko'rinishi
+indicator-idle-visible
+indicator-radius=110
+indicator-thickness=8
+ignore-empty-password
+show-failed-attempts
+
+# Shrift
+font=Cantarell
+font-size=16
+
+# Normal holat
+inside-color=00000044
+ring-color=3b82f666
+line-color=00000000
+separator-color=00000000
+text-color=f3f4f6
+
+# Tugma bosilganda (Tepish)
+key-hl-color=38bdf8
+bs-hl-color=f59e0b
+
+# Tekshirilayotganda (Verifying)
+inside-ver-color=00000055
+ring-ver-color=10b981
+text-ver-color=10b981
+
+# Noto'g'ri parol kiritilganda (Wrong)
+inside-wrong-color=00000055
+ring-wrong-color=ef4444
+text-wrong-color=ef4444
+
+# Tozalanganda (Clear)
+inside-clear-color=00000055
+ring-clear-color=f59e0b
+text-clear-color=f59e0b
+
+# Caps lock holatida
+inside-caps-lock-color=00000055
+ring-caps-lock-color=f59e0b
+caps-lock-key-hl-color=38bdf8
+caps-lock-bs-hl-color=ef4444
+text-caps-lock-color=f59e0b

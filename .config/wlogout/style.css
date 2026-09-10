@@ -1,0 +1,57 @@
+* {
+    background-image: none;
+    box-shadow: none;
+    text-shadow: none;
+    font-family: "SF Pro Display", "SF Pro Text", "Noto Sans", sans-serif;
+}
+
+window {
+    background-color: rgba(15, 16, 18, 0.85);
+}
+
+button {
+    color: #f3f4f6;
+    background-color: rgba(255, 255, 255, 0.05);
+    border: 1.5px solid rgba(255, 255, 255, 0.12);
+    border-radius: 22px;
+    background-repeat: no-repeat;
+    background-position: center 30%;
+    background-size: 54px 54px;
+    margin: 6px;
+    padding-top: 110px;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+button:hover, button:focus {
+    background-color: rgba(16, 185, 129, 0.18);
+    border: 1.5px solid #10b981;
+    color: #ffffff;
+    box-shadow: 0 0 28px rgba(16, 185, 129, 0.4);
+}
+
+#lock {
+    background-image: image(url("/usr/share/wlogout/icons/lock.png"));
+}
+
+#hibernate {
+    background-image: image(url("/usr/share/wlogout/icons/hibernate.png"));
+}
+
+#logout {
+    background-image: image(url("/usr/share/wlogout/icons/logout.png"));
+}
+
+#suspend {
+    background-image: image(url("/usr/share/wlogout/icons/suspend.png"));
+}
+
+#reboot {
+    background-image: image(url("/usr/share/wlogout/icons/reboot.png"));
+}
+
+#shutdown {
+    background-image: image(url("/usr/share/wlogout/icons/shutdown.png"));
+}

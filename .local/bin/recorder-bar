@@ -1,0 +1,260 @@
+#!/usr/bin/env python3
+import os
+import sys
+import time
+import signal
+import subprocess
+
+import gi
+gi.require_version("Gtk", "3.0")
+gi.require_version("GtkLayerShell", "0.1")
+from gi.repository import Gtk, Gdk, GLib, GtkLayerShell
+
+CSS = b"""
+window {
+    background-color: transparent;
+}
+.rec-pill {
+    background-color: rgba(16, 18, 22, 0.94);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 26px;
+    padding: 6px 16px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+}
+.rec-dot {
+    color: #ff5555;
+    font-size: 16px;
+    font-weight: bold;
+}
+.gif-badge {
+    color: #ffb86c;
+    font-size: 13px;
+    font-weight: 800;
+}
+.rec-timer {
+    color: #f8f8f2;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 14px;
+    font-weight: 700;
+    margin-left: 8px;
+    margin-right: 12px;
+}
+.btn-control {
+    background: transparent;
+    border: none;
+    border-radius: 16px;
+    padding: 4px 10px;
+    font-size: 14px;
+    color: #f8f8f2;
+    transition: all 150ms ease;
+}
+.btn-control:hover {
+    background-color: rgba(255, 255, 255, 0.12);
+}
+.btn-stop {
+    background-color: rgba(255, 85, 85, 0.25);
+    color: #ff5555;
+    font-weight: bold;
+}
+.btn-stop:hover {
+    background-color: #ff5555;
+    color: #ffffff;
+}
+.btn-cancel {
+    color: #8be9fd;
+    font-size: 14px;
+}
+.btn-cancel:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: #ff5555;
+}
+.rec-sep {
+    color: rgba(255, 255, 255, 0.2);
+    margin: 0 4px;
+}
+"""
+
+class RecorderBar(Gtk.Window):
+    def __init__(self, mode, rec_pid, out_file):
+        super().__init__()
+        self.mode = mode
+        self.rec_pid = int(rec_pid)
+        self.out_file = out_file
+        self.start_time = time.time()
+        self.elapsed_offset = 0
+        self.is_paused = False
+
+        GtkLayerShell.init_for_window(self)
+        GtkLayerShell.set_layer(self, GtkLayerShell.Layer.OVERLAY)
+        GtkLayerShell.set_anchor(self, GtkLayerShell.Edge.TOP, True)
+        GtkLayerShell.set_margin(self, GtkLayerShell.Edge.TOP, 12)
+        GtkLayerShell.set_keyboard_mode(self, GtkLayerShell.KeyboardMode.NONE)
+
+        style_provider = Gtk.CssProvider()
+        style_provider.load_from_data(CSS)
+        Gtk.StyleContext.add_provider_for_screen(
+            Gdk.Screen.get_default(),
+            style_provider,
+            Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+        )
+
+        box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=4)
+        box.get_style_context().add_class("rec-pill")
+
+        # Indicator Dot / Badge
+        if self.mode == "gif":
+            self.lbl_badge = Gtk.Label(label="🎞️ GIF")
+            self.lbl_badge.get_style_context().add_class("gif-badge")
+        else:
+            self.lbl_badge = Gtk.Label(label="● REC")
+            self.lbl_badge.get_style_context().add_class("rec-dot")
+        box.pack_start(self.lbl_badge, False, False, 0)
+
+        # Timer
+        self.lbl_timer = Gtk.Label(label="00:00")
+        self.lbl_timer.get_style_context().add_class("rec-timer")
+        box.pack_start(self.lbl_timer, False, False, 0)
+
+        # Separator
+        sep = Gtk.Label(label="|")
+        sep.get_style_context().add_class("rec-sep")
+        box.pack_start(sep, False, False, 0)
+
+        # Pause / Resume Button
+        self.btn_pause = Gtk.Button(label="⏸")
+        self.btn_pause.set_tooltip_text("Pauza (to'xtatib turish)")
+        self.btn_pause.get_style_context().add_class("btn-control")
+        self.btn_pause.connect("clicked", self.on_toggle_pause)
+        box.pack_start(self.btn_pause, False, False, 0)
+
+        # Stop & Save Button
+        self.btn_stop = Gtk.Button(label="⏹ Saqlash")
+        self.btn_stop.set_tooltip_text("Yozib olishni yakunlash va saqlash")
+        self.btn_stop.get_style_context().add_class("btn-control")
+        self.btn_stop.get_style_context().add_class("btn-stop")
+        self.btn_stop.connect("clicked", self.on_stop_and_save)
+        box.pack_start(self.btn_stop, False, False, 0)
+
+        # Cancel Button
+        btn_cancel = Gtk.Button(label="✕")
+        btn_cancel.set_tooltip_text("Bekor qilish (faylni o'chirish)")
+        btn_cancel.get_style_context().add_class("btn-control")
+        btn_cancel.get_style_context().add_class("btn-cancel")
+        btn_cancel.connect("clicked", self.on_cancel)
+        box.pack_start(btn_cancel, False, False, 0)
+
+        self.add(box)
+        self.connect("destroy", Gtk.main_quit)
+
+        GLib.timeout_add(1000, self.update_timer)
+
+    def update_timer(self):
+        # Check if process is still alive
+        try:
+            os.kill(self.rec_pid, 0)
+        except OSError:
+            # Process was terminated outside (e.g. via hotkey)
+            self.finalize_exit(cancelled=False)
+            return False
+
+        if not self.is_paused:
+            elapsed = int(time.time() - self.start_time) + self.elapsed_offset
+            mins = elapsed // 60
+            secs = elapsed % 60
+            self.lbl_timer.set_text(f"{mins:02d}:{secs:02d}")
+        return True
+
+    def on_toggle_pause(self, widget):
+        if not self.is_paused:
+            # Pause
+            try:
+                os.kill(self.rec_pid, signal.SIGSTOP)
+            except Exception:
+                pass
+            self.elapsed_offset += int(time.time() - self.start_time)
+            self.is_paused = True
+            self.btn_pause.set_label("▶")
+            self.btn_pause.set_tooltip_text("Davom ettirish")
+            self.lbl_badge.set_text("⏸ PAUZA")
+        else:
+            # Resume
+            try:
+                os.kill(self.rec_pid, signal.SIGCONT)
+            except Exception:
+                pass
+            self.start_time = time.time()
+            self.is_paused = False
+            self.btn_pause.set_label("⏸")
+            self.btn_pause.set_tooltip_text("Pauza (to'xtatib turish)")
+            if self.mode == "gif":
+                self.lbl_badge.set_text("🎞️ GIF")
+            else:
+                self.lbl_badge.set_text("● REC")
+
+    def on_stop_and_save(self, widget):
+        self.finalize_exit(cancelled=False)
+
+    def on_cancel(self, widget):
+        self.finalize_exit(cancelled=True)
+
+    def finalize_exit(self, cancelled=False):
+        # Resume if paused so SIGINT can process
+        if self.is_paused:
+            try:
+                os.kill(self.rec_pid, signal.SIGCONT)
+            except Exception:
+                pass
+
+        try:
+            os.kill(self.rec_pid, signal.SIGINT)
+        except Exception:
+            pass
+
+        # Wait briefly for container finalization
+        for _ in range(15):
+            try:
+                os.kill(self.rec_pid, 0)
+                time.sleep(0.1)
+            except OSError:
+                break
+
+        if cancelled:
+            try:
+                if os.path.exists(self.out_file):
+                    os.remove(self.out_file)
+            except Exception:
+                pass
+            subprocess.run([
+                "notify-send", "Yozib olish bekor qilindi", "Video saqlanmadi",
+                "-i", "dialog-warning", "-t", "2500", "-a", "Screen Recorder"
+            ], stderr=subprocess.DEVNULL)
+        else:
+            if os.path.exists(self.out_file) and os.path.getsize(self.out_file) > 1000:
+                subprocess.run(["wl-copy"], input=self.out_file, text=True)
+                base = os.path.basename(self.out_file)
+                subprocess.run([
+                    "notify-send", "Yozib olish yakunlandi ✓",
+                    f"Fayl saqlandi:\n{base}\n(Fayl yo'li buferga olindi)",
+                    "-i", "video-x-generic", "-t", "4500", "-a", "Screen Recorder"
+                ], stderr=subprocess.DEVNULL)
+
+        try:
+            if os.path.exists("/tmp/quick_recorder_info.json"):
+                os.remove("/tmp/quick_recorder_info.json")
+        except Exception:
+            pass
+
+        Gtk.main_quit()
+
+def main():
+    if len(sys.argv) < 4:
+        sys.exit(1)
+    mode = sys.argv[1]
+    rec_pid = sys.argv[2]
+    out_file = sys.argv[3]
+    win = RecorderBar(mode, rec_pid, out_file)
+    win.show_all()
+    Gtk.main()
+
+if __name__ == "__main__":
+    main()

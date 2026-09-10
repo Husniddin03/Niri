@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# ==============================================================================
+# Niri Lock Screen Launcher with Blurred Wallpaper
+# ==============================================================================
+
+BLURRED_IMG="$HOME/.cache/current_wallpaper_blurred.png"
+WALLPAPER_FILE="$HOME/.cache/current_wallpaper"
+
+# Joriy fon rasmi mavjud bo'lsa, xiralashtirilgan nusxasini tayyorlash/yangilash
+if [ -f "$WALLPAPER_FILE" ]; then
+    CURR_WP="$(cat "$WALLPAPER_FILE")"
+    if [ -f "$CURR_WP" ]; then
+        if [ ! -f "$BLURRED_IMG" ] || [ "$CURR_WP" -nt "$BLURRED_IMG" ]; then
+            convert "$CURR_WP" -scale 20% -blur 0x3 -resize 500% "$BLURRED_IMG" 2>/dev/null
+        fi
+    fi
+fi
+
+# Agar xiralashgan fon rasmi bo'lsa, uni swaylock bilan ishga tushirish
+if [ -f "$BLURRED_IMG" ]; then
+    exec swaylock -i "$BLURRED_IMG" -s fill
+else
+    exec swaylock
+fi

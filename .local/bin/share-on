@@ -1,0 +1,75 @@
+#!/usr/bin/env bash
+
+# Hotspot sozlamalari
+HOTSPOT_CON="NiriHotspot"
+SSID="Niri"
+PASSWORD="330440311"
+IFACE="wlo1"
+CONF_FILE="/etc/NetworkManager/dnsmasq-shared.d/hotspot-limit.conf"
+
+# 1. Limitni aniqlash (standart 10 ta qurilma)
+LIMIT="${1:-10}"
+
+# Son ekanligini tekshirish
+if ! [[ "$LIMIT" =~ ^[0-9]+$ ]] || [ "$LIMIT" -le 0 ]; then
+    echo "❌ Xatolik: Qurilmalar soni musbat butun son bo'lishi kerak! (Masalan: share-on 5 yoki share-on 10)"
+    exit 1
+fi
+
+START_IP=10
+END_IP=$((START_IP + LIMIT - 1))
+if [ "$END_IP" -gt 254 ]; then
+    END_IP=254
+fi
+
+# 2. dnsmasq limit konfiguratsiyasini tayyorlash
+CONF_CONTENT="# Niri Hotspot limit sozlamalari
+dhcp-lease-max=${LIMIT}
+dhcp-range=10.42.0.${START_IP},10.42.0.${END_IP},1h"
+
+# Konfiguratsiyani yozish (agar ruxsat bo'lsa sudo'siz, aks holda sudo bilan)
+if [ -w "$CONF_FILE" ]; then
+    echo "$CONF_CONTENT" > "$CONF_FILE"
+elif [ -w "$(dirname "$CONF_FILE" 2>/dev/null)" ]; then
+    echo "$CONF_CONTENT" > "$CONF_FILE"
+else
+    echo "$CONF_CONTENT" | sudo tee "$CONF_FILE" > /dev/null
+fi
+
+# 3. Agar NiriHotspot ulanishi mavjud bo'lmasa, uni yaratish
+if ! nmcli -t -f NAME connection show | grep -Fxq "$HOTSPOT_CON"; then
+    echo "⚙️  $HOTSPOT_CON ulanishi yaratilmoqda..."
+    nmcli connection add type wifi ifname "$IFACE" con-name "$HOTSPOT_CON" autoconnect no ssid "$SSID" mode ap
+    nmcli connection modify "$HOTSPOT_CON" 802-11-wireless.band bg 802-11-wireless.channel 6
+    nmcli connection modify "$HOTSPOT_CON" 802-11-wireless-security.key-mgmt wpa-psk
+    nmcli connection modify "$HOTSPOT_CON" 802-11-wireless-security.psk "$PASSWORD"
+    nmcli connection modify "$HOTSPOT_CON" ipv4.method shared
+else
+    # Parol yoki SSID to'g'riligiga ishonch hosil qilish
+    nmcli connection modify "$HOTSPOT_CON" 802-11-wireless.ssid "$SSID"
+    nmcli connection modify "$HOTSPOT_CON" 802-11-wireless-security.psk "$PASSWORD"
+    nmcli connection modify "$HOTSPOT_CON" ipv4.method shared
+fi
+
+# 4. Agar hozirda shu interfeysda ulanish faol bo'lsa, limit yangilanishi uchun o'chirib qayta yoqamiz
+ACTIVE_CON=$(nmcli -t -f NAME,DEVICE connection show --active | grep ":${IFACE}$" | cut -d: -f1)
+if [ -n "$ACTIVE_CON" ]; then
+    nmcli connection down "$ACTIVE_CON" >/dev/null 2>&1
+fi
+
+# 5. Hotspotni ishga tushirish
+if nmcli connection up "$HOTSPOT_CON" >/dev/null 2>&1; then
+    echo "✅ Internet tarqatish (Hotspot) yoqildi!"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo " 📡 Tarmoq nomi (SSID): $SSID"
+    echo " 🔑 Parol:               $PASSWORD"
+    echo " 👥 Ruxsat berilgan:     Maksimal $LIMIT ta qurilma"
+    echo " 🌐 DHCP diapazoni:       10.42.0.${START_IP} - 10.42.0.${END_IP}"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "💡 O'chirish uchun:          share-off"
+    echo "💡 Ulanganlarni ko'rish:     share-list"
+else
+    echo "❌ Hotspotni yoqishda xatolik yuz berdi!"
+    echo "Iltimos, qo'lda sinab ko'ring: nmcli connection up $HOTSPOT_CON"
+    exit 1
+fi

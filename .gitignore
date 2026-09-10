@@ -1,0 +1,24 @@
+# Python & Virtual Environments
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+env/
+venv/
+*.egg-info/
+dist/
+build/
+
+# Temporary files & logs
+*.log
+*.pid
+*.tmp
+*.bak
+*.swp
+*~
+.DS_Store
+
+# Secret configs & API keys
+config.json
+*.key
+*.pem

@@ -1,0 +1,114 @@
+#!/usr/bin/env python3
+import sys
+import os
+import json
+import hashlib
+import time
+import subprocess
+
+CACHE_DIR = os.path.expanduser("~/.cache/clip_history")
+IMAGES_DIR = os.path.join(CACHE_DIR, "images")
+HISTORY_FILE = os.path.join(CACHE_DIR, "history.json")
+
+os.makedirs(IMAGES_DIR, exist_ok=True)
+
+def load_history():
+    if os.path.exists(HISTORY_FILE):
+        try:
+            with open(HISTORY_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            return []
+    return []
+
+def save_history(history):
+    history = history[:60] # Keep last 60 entries
+    tmp_file = HISTORY_FILE + ".tmp"
+    with open(tmp_file, "w", encoding="utf-8") as f:
+        json.dump(history, f, ensure_ascii=False, indent=2)
+    os.replace(tmp_file, HISTORY_FILE)
+
+def is_image(b):
+    if len(b) < 16:
+        return None
+    if b.startswith(b'\x89PNG\r\n\x1a\n'):
+        return 'png'
+    if b.startswith(b'\xff\xd8\xff'):
+        return 'jpg'
+    if b.startswith(b'GIF8'):
+        return 'gif'
+    if b.startswith(b'RIFF') and b'WEBP' in b[:16]:
+        return 'webp'
+    if b.startswith(b'BM'):
+        return 'bmp'
+    return None
+
+try:
+    raw_bytes = sys.stdin.buffer.read()
+    if not raw_bytes or len(raw_bytes) == 0:
+        sys.exit(0)
+
+    img_type = is_image(raw_bytes)
+
+    if img_type:
+        # ── Handle image ──────────────────────────────────────────────
+        img_hash = hashlib.md5(raw_bytes).hexdigest()[:16]
+        img_path = os.path.join(IMAGES_DIR, f"{img_hash}.{img_type}")
+        thumb_path = os.path.join(IMAGES_DIR, f"{img_hash}_thumb.png")
+
+        history = load_history()
+        if history and history[0].get("type") == "image" and history[0].get("hash") == img_hash:
+            sys.exit(0)
+
+        if not os.path.exists(img_path):
+            with open(img_path, "wb") as f:
+                f.write(raw_bytes)
+            subprocess.run(["convert", img_path, "-thumbnail", "64x64^", "-gravity", "center", "-extent", "64x64", thumb_path], stderr=subprocess.DEVNULL)
+
+        history = [h for h in history if not (h.get("type") == "image" and h.get("hash") == img_hash)]
+
+        dim_out = subprocess.run(["identify", "-format", "%wx%h", img_path], capture_output=True, text=True).stdout.strip()
+        preview_text = f"📷 Rasm ({dim_out})" if dim_out else f"📷 Nusxalangan rasm ({img_type})"
+
+        history.insert(0, {
+            "type": "image",
+            "hash": img_hash,
+            "file": img_path,
+            "thumb": thumb_path if os.path.exists(thumb_path) else img_path,
+            "preview": preview_text,
+            "time": int(time.time())
+        })
+        save_history(history)
+
+    else:
+        # ── Handle text ───────────────────────────────────────────────
+        try:
+            data = raw_bytes.decode("utf-8")
+        except UnicodeDecodeError:
+            data = raw_bytes.decode("utf-8", errors="replace")
+
+        if not data or not data.strip():
+            sys.exit(0)
+
+        history = load_history()
+        if history and history[0].get("type") == "text" and history[0].get("content") == data:
+            sys.exit(0)
+
+        history = [h for h in history if not (h.get("type") == "text" and h.get("content") == data)]
+
+        first_line = data.strip().splitlines()[0] if data.strip().splitlines() else ""
+        if len(first_line) > 60:
+            first_line = first_line[:57] + "..."
+        if len(data.strip().splitlines()) > 1:
+            first_line += " 📑"
+
+        history.insert(0, {
+            "type": "text",
+            "content": data,
+            "preview": first_line,
+            "time": int(time.time())
+        })
+        save_history(history)
+
+except Exception:
+    pass

@@ -1,0 +1,9 @@
+#!/bin/bash
+
+if systemctl --user is-active niri-gestures >/dev/null 2>&1; then
+    systemctl --user stop niri-gestures
+    notify-send -u normal -a "Niri Gestures" "🖐️ Qo'l boshqaruvi" "To'xtatildi (Kamera o'chirildi)" -i camera-off
+else
+    systemd-run --user --unit=niri-gestures /home/husniddin/.config/niri-gestures/.venv/bin/python /home/husniddin/.config/niri-gestures/daemon.py
+    notify-send -u normal -a "Niri Gestures" "🖐️ Qo'l boshqaruvi" "Faollashdi (Kamera yoqildi)" -i camera-web
+fi

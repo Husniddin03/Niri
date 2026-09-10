@@ -1,0 +1,403 @@
+// ╔══════════════════════════════════════════════════════════════╗
+// ║  Niri Config — Clean & Seamless (No Borders, No Gaps)        ║
+// ╚══════════════════════════════════════════════════════════════╝
+
+// ── Input ────────────────────────────────────────────────────────
+input {
+    focus-follows-mouse
+
+    keyboard {
+        numlock
+        repeat-delay  300
+        repeat-rate   25
+    }
+
+    touchpad {
+        tap
+        tap-button-map "left-right-middle"
+        natural-scroll
+        scroll-method "two-finger"
+        accel-speed    0.3
+        accel-profile  "adaptive"
+    }
+
+    mouse {
+        accel-speed   0.0
+        accel-profile "flat"
+    }
+}
+
+// ── Outputs ──────────────────────────────────────────────────────
+output "eDP-1" {
+    position x=0 y=0
+    mode "1920x1080@60.000000"
+    scale 1.0
+    transform "normal"
+}
+
+output "HDMI-A-2" {
+    position x=1920 y=0
+    mode "1920x1080@60.000000"
+    scale 1.0
+    transform "normal"
+}
+
+
+// ── Layout (Full Screen & No Gaps) ───────────────────────────────
+layout {
+    gaps 0  // Oynalar orasidagi bo'shliqlarni butkul yo'qotadi
+
+    default-column-width {
+        proportion 1.0
+    }
+
+    preset-column-widths {
+        proportion 0.40
+        proportion 0.50
+        proportion 0.65
+        proportion 1.0
+    }
+
+    // Fokus chizig'ini (Focus Ring) to'liq ko'rinmas va qalinligini 0 qilamiz
+    focus-ring {
+        width 0
+        active-color "#00000000"
+        inactive-color "#00000000"
+    }
+
+    background-color "#22224488"
+    //background-color "#00000066"
+
+    // Oyna borderlarini (chegaralarini) butunlay o'chiramiz
+    border {
+        off
+    }
+
+    // Strata (Waybar kabi panellar) uchun oyna soyalarini toza saqlash
+    shadow {
+        off
+    }
+}
+
+// Fon rasmini Overview backdrop (orqa foni) ichiga joylashtirish qoidasi
+layer-rule {
+    match namespace="^wallpaper$"
+    place-within-backdrop true
+}
+spawn-at-startup "sh" "-c" "[ -f ~/.cache/current_overview_backdrop ] && swaybg -i $(cat ~/.cache/current_overview_backdrop) -m fill || swaybg -i /home/husniddin/Pictures/Wallpapers/space.jpeg -m fill"
+
+spawn-at-startup "dunst"
+// ── Startup ──────────────────────────────────────────────────────
+spawn-at-startup "waybar"
+
+spawn-at-startup "sh" "-c" "sleep 0.1 && swww-daemon"
+
+spawn-at-startup "dbus-update-environment" "--systemd" "WAYLAND_DISPLAY" "XDG_CURRENT_DESKTOP" "XDG_SESSION_TYPE"
+
+spawn-at-startup "sh" "-c" "waybar -s ~/.config/waybar/launch.css"
+spawn-at-startup "sh" "-c" "bash ~/.config/niri/niri-event-listener.sh"
+spawn-at-startup "sh" "-c" "~/.config/niri/hotcorner"
+
+spawn-at-startup "sh" "-c" "~/.config/waybar/scripts/battery-alert.sh &"
+spawn-at-startup "/home/husniddin/.local/bin/clip-daemon"
+
+// Waybar va swaybg uchun atrof-muhit o'zgaruvchilarini import qilish
+spawn-at-startup "systemctl" "--user" "import-environment" "WAYLAND_DISPLAY" "XDG_CURRENT_DESKTOP" "XDG_SESSION_TYPE"
+spawn-at-startup "systemctl" "--user" "import-environment" "XDG_DATA_DIRS"
+spawn-at-startup "dbus-update-activation-environment" "--systemd" "WAYLAND_DISPLAY" "XDG_CURRENT_DESKTOP" "XDG_SESSION_TYPE"
+
+// Ekran quvvatini tejash va qulflash uchun swayidle va niri-lock ishga tushirish
+spawn-at-startup "swayidle" "-w" \
+    "timeout" "3600" "niri msg action power-off-monitors" \
+    "resume" "niri msg action power-on-monitors" \
+    "timeout" "4800" "/home/husniddin/.local/bin/niri-lock" \
+    "timeout" "4800" "systemctl suspend"
+
+// ── Screenshot path ──────────────────────────────────────────────
+screenshot-path "~/Pictures/Screenshots/Screenshot %Y-%m-%d %H-%M-%S.png"
+
+environment {
+    xwayland-disable
+}
+
+// ── Animations ───────────────────────────────────────────────────
+animations {
+    slowdown 0.8
+}
+
+// ── Prefer No Client-Side Decorations ────────────────────────────
+prefer-no-csd
+
+// ── Window Rules ─────────────────────────────────────────────────
+// Barcha oynalar uchun burchak radiusini 0 qilish va borderlarni butkul taqiqlash
+window-rule {
+    geometry-corner-radius 0
+    clip-to-geometry       true
+    draw-border-with-background false
+}
+
+// WezTerm uchun maxsus qoida
+window-rule {
+    match app-id=r#"^org\.wezfurlong\.wezterm$"#
+    default-column-width {}
+}
+
+// Firefox Picture-in-Picture rejimi uchun
+window-rule {
+    match app-id=r#"firefox$"# title="^Picture-in-Picture$"
+    open-floating true
+}
+
+// Flameshot uchun maxsus qoida
+window-rule {
+    match app-id="flameshot"
+    open-floating true
+    open-fullscreen false
+    default-floating-position x=0 y=0 relative-to="top-left"
+}
+
+// Zenity va Quick AI muloqot darchalari uchun suzuvchi qoida
+window-rule {
+    match app-id="zenity"
+    open-floating true
+}
+
+window-rule {
+    match app-id="quick-ai"
+    open-floating true
+}
+
+// ── Key bindings ─────────────────────────────────────────────────
+binds {
+    // Show hotkey cheatsheet
+    Mod+Shift+Slash { show-hotkey-overlay; }
+
+    // ── Apps ─────────────────────────────────────────────────────
+    Mod+T hotkey-overlay-title="Terminal (alacritty)" { spawn "alacritty"; }
+    Mod+D hotkey-overlay-title="App Launcher" {
+        spawn "/home/husniddin/.config/wofi/launcher/launcher.sh";
+    }
+    Mod+N hotkey-overlay-title="Control Center (Network, Hotspot, BT)" {
+        spawn "/home/husniddin/.local/bin/niri-control-center";
+    }
+    Mod+V hotkey-overlay-title="Clipboard History (Nusxalar)" {
+        spawn "/home/husniddin/.local/bin/clip-menu";
+    }
+    Mod+G hotkey-overlay-title="Hand Gestures (Qo'l harakatlari bilan boshqaruv)" {
+        spawn "/home/husniddin/.local/bin/niri-gestures-toggle";
+    }
+    Mod+B hotkey-overlay-title="Browser (firefox)"    { spawn "firefox"; }
+    Mod+E hotkey-overlay-title="Files (nautilus)"     { spawn "nautilus"; }
+    Mod+Return { spawn "foot"; }
+
+    Mod+W hotkey-overlay-title="Wallpaper" {
+        spawn "/home/husniddin/.config/wofi/wallpaper/wallpaper.sh";
+    }
+
+    Mod+Tab { spawn "/home/husniddin/.config/niri/overview-toggle.sh"; }
+
+    Mod+Shift+W hotkey-overlay-title="Overview Backdrop" {
+        spawn "/home/husniddin/.config/wofi/wallpaper/overview_wallpaper.sh";
+    }
+    // Screen lock
+    Super+Alt+L hotkey-overlay-title="Lock Screen" { spawn "/home/husniddin/.local/bin/niri-lock"; }
+
+    // ── Tezkor AI Yordamchi ──────────────────────────────────────
+    Mod+A hotkey-overlay-title="Tezkor AI (Ekrandan belgilab tarjima/tahlil)" {
+        spawn "/home/husniddin/.local/bin/quick-ai" "snap";
+    }
+    Mod+Shift+A hotkey-overlay-title="Tezkor AI (Savol-javob darchasi)" {
+        spawn "/home/husniddin/.local/bin/quick-ai" "ask";
+    }
+
+    // ── Offline OCR (Internetsiz ekrandan matn nusxalash) ────────
+    Mod+X hotkey-overlay-title="Offline OCR (Matn nusxalash)" {
+        spawn "/home/husniddin/.local/bin/quick-ocr";
+    }
+
+    // ── Smart OCR & Tarjimon + QR-kod ────────────────────────────
+    Mod+Alt+X hotkey-overlay-title="Smart Tarjimon & QR-kod" {
+        spawn "/home/husniddin/.local/bin/quick-translate";
+    }
+
+    // ── Rang tanlagich (Pipette / Color Picker) ──────────────────
+    Mod+P hotkey-overlay-title="Color Picker (HEX/RGB nusxalash)" {
+        spawn "/home/husniddin/.local/bin/quick-colorpicker";
+    }
+
+    // ── Ekran yozuvchisi (Video MP4 va GIF) ──────────────────────
+    Mod+Alt+R hotkey-overlay-title="Ekran yozish (MP4 video)" {
+        spawn "/home/husniddin/.local/bin/quick-recorder" "mp4";
+    }
+    Mod+Alt+G hotkey-overlay-title="Ekran yozish (GIF)" {
+        spawn "/home/husniddin/.local/bin/quick-recorder" "gif";
+    }
+
+    // ── Tungi rejim (Night Light / Ko'z himoyasi) ────────────────
+    Mod+Shift+N hotkey-overlay-title="Tungi rejim (Ko'z himoyasi)" {
+        spawn "/home/husniddin/.local/bin/quick-nightlight";
+    }
+
+    // ── Ovoz orqali yozish (Diktant / Speech-to-Text) ────────────
+    Mod+Space repeat=false hotkey-overlay-title="Ovoz orqali yozish (Diktant)" {
+        spawn "/home/husniddin/.local/bin/quick-voice";
+    }
+
+    // Screenshot (Flameshot - chizish, bo'yash, matn va belgilash imkoniyati bilan)
+    Print        { spawn "/home/husniddin/.config/niri/screenshot.sh"; }
+    Shift+Print  { screenshot; }
+    Ctrl+Print   { screenshot-screen; }
+    Alt+Print    { screenshot-window; }
+
+    // ── Volume (OSD bilan) ───────────────────────────────────────
+    XF86AudioRaiseVolume allow-when-locked=true { spawn "/home/husniddin/.config/niri/scripts/volume.sh" "up"; }
+    XF86AudioLowerVolume allow-when-locked=true { spawn "/home/husniddin/.config/niri/scripts/volume.sh" "down"; }
+    XF86AudioMute        allow-when-locked=true { spawn "/home/husniddin/.config/niri/scripts/volume.sh" "mute"; }
+    XF86AudioMicMute     allow-when-locked=true { spawn "/home/husniddin/.config/niri/scripts/volume.sh" "mic-mute"; }
+
+    // ── Media ────────────────────────────────────────────────────
+    XF86AudioPlay  allow-when-locked=true { spawn-sh "playerctl play-pause"; }
+    XF86AudioPause allow-when-locked=true { spawn-sh "playerctl play-pause"; }
+    XF86AudioStop  allow-when-locked=true { spawn-sh "playerctl stop"; }
+    XF86AudioPrev  allow-when-locked=true { spawn-sh "playerctl previous"; }
+    XF86AudioNext  allow-when-locked=true { spawn-sh "playerctl next"; }
+
+    // ── Brightness (OSD bilan) ───────────────────────────────────
+    XF86MonBrightnessUp   allow-when-locked=true { spawn "/home/husniddin/.config/niri/scripts/brightness.sh" "up"; }
+    XF86MonBrightnessDown allow-when-locked=true { spawn "/home/husniddin/.config/niri/scripts/brightness.sh" "down"; }
+
+    // ── Overview ─────────────────────────────────────────────────
+    Mod+O repeat=false { toggle-overview; }
+
+    // ── Window management ────────────────────────────────────────
+    Mod+Shift+Q { close-window; }
+    Mod+Shift+V hotkey-overlay-title="Toggle Floating" { toggle-window-floating; }
+
+    // ── Focus ────────────────────────────────────────────────────
+    // ── Focus ────────────────────────────────────────────────────
+    Mod+Left  { focus-column-or-monitor-left; }
+    Mod+Right { focus-column-or-monitor-right; }
+    Mod+Up    { focus-window-or-workspace-up; }
+    Mod+Down  { focus-window-or-workspace-down; }
+
+    Mod+H     { focus-column-left; }
+    Mod+L     { focus-column-right; }
+    Mod+K     { focus-window-up; }
+    Mod+J     { focus-window-down; }
+
+    // ── Move ─────────────────────────────────────────────────────
+    Mod+Ctrl+Left  { move-column-left; }
+    Mod+Ctrl+Right { move-column-right; }
+    Mod+Ctrl+Up    { move-window-up; }
+    Mod+Ctrl+Down  { move-window-down; }
+    Mod+Ctrl+H     { move-column-left; }
+    Mod+Ctrl+L     { move-column-right; }
+    Mod+Ctrl+K     { move-window-up; }
+    Mod+Ctrl+J     { move-window-down; }
+
+    Mod+Home      { focus-column-first; }
+    Mod+End       { focus-column-last; }
+    Mod+Ctrl+Home { move-column-to-first; }
+    Mod+Ctrl+End  { move-column-to-last; }
+
+    // ── Monitors ─────────────────────────────────────────────────
+    Mod+Shift+H { focus-monitor-left; }
+    Mod+Shift+L { focus-monitor-right; }
+    Mod+Shift+K { focus-monitor-up; }
+    Mod+Shift+J { focus-monitor-down; }
+
+    Mod+Shift+Ctrl+H { move-column-to-monitor-left; }
+    Mod+Shift+Ctrl+L { move-column-to-monitor-right; }
+    Mod+Shift+Ctrl+K { move-column-to-monitor-up; }
+    Mod+Shift+Ctrl+J { move-column-to-monitor-down; }
+
+    // ── Workspaces ───────────────────────────────────────────────
+    Mod+Page_Down { focus-workspace-down; }
+    Mod+Page_Up   { focus-workspace-up; }
+    Mod+U         { focus-workspace-down; }
+    Mod+I         { focus-workspace-up; }
+
+
+    Mod+Ctrl+Page_Down { move-column-to-workspace-down; }
+    Mod+Ctrl+Page_Up   { move-column-to-workspace-up; }
+    Mod+Ctrl+U         { move-column-to-workspace-down; }
+    Mod+Ctrl+I         { move-column-to-workspace-up; }
+
+    Mod+Shift+Page_Down { move-workspace-down; }
+    Mod+Shift+Page_Up   { move-workspace-up; }
+
+    // Mouse wheel workspace switching
+    Mod+WheelScrollDown      cooldown-ms=150 { focus-workspace-down; }
+    Mod+WheelScrollUp        cooldown-ms=150 { focus-workspace-up; }
+    Mod+Ctrl+WheelScrollDown cooldown-ms=150 { move-column-to-workspace-down; }
+    Mod+Ctrl+WheelScrollUp   cooldown-ms=150 { move-column-to-workspace-up; }
+
+    // Mod+Shift+WheelScroll bilan yondagi oynalarga o'tish
+    Mod+Shift+WheelScrollDown cooldown-ms=150 { focus-column-right; }
+    Mod+Shift+WheelScrollUp   cooldown-ms=150 { focus-column-left; }
+
+    Mod+WheelScrollRight      { focus-column-right; }
+    Mod+WheelScrollLeft       { focus-column-left; }
+    Mod+Ctrl+WheelScrollRight { move-column-right; }
+    Mod+Ctrl+WheelScrollLeft  { move-column-left; }
+
+    // ── Workspace numbers ────────────────────────────────────────
+    Mod+1 { focus-workspace 1; }
+    Mod+2 { focus-workspace 2; }
+    Mod+3 { focus-workspace 3; }
+    Mod+4 { focus-workspace 4; }
+    Mod+5 { focus-workspace 5; }
+    Mod+6 { focus-workspace 6; }
+    Mod+7 { focus-workspace 7; }
+    Mod+8 { focus-workspace 8; }
+    Mod+9 { focus-workspace 9; }
+
+    Mod+Ctrl+1 { move-column-to-workspace 1; }
+    Mod+Ctrl+2 { move-column-to-workspace 2; }
+    Mod+Ctrl+3 { move-column-to-workspace 3; }
+    Mod+Ctrl+4 { move-column-to-workspace 4; }
+    Mod+Ctrl+5 { move-column-to-workspace 5; }
+    Mod+Ctrl+6 { move-column-to-workspace 6; }
+    Mod+Ctrl+7 { move-column-to-workspace 7; }
+    Mod+Ctrl+8 { move-column-to-workspace 8; }
+    Mod+Ctrl+9 { move-column-to-workspace 9; }
+
+    // ── Sizing ───────────────────────────────────────────────────
+    Mod+R           { switch-preset-column-width; }
+    Mod+Ctrl+R      { reset-window-height; }
+
+    Mod+F           { maximize-column; }
+    Mod+Shift+F     { fullscreen-window; }
+    Mod+M           { maximize-window-to-edges; }
+    Mod+Ctrl+F      { expand-column-to-available-width; }
+    Mod+C           { center-column; }
+    Mod+Ctrl+C      { center-visible-columns; }
+
+    Mod+Minus       { set-column-width "-5%"; }
+    Mod+Equal       { set-column-width "+5%"; }
+    Mod+Shift+Minus { set-window-height "-5%"; }
+    Mod+Shift+Equal { set-window-height "+5%"; }
+
+    Mod+BracketLeft  { consume-or-expel-window-left; }
+    Mod+BracketRight { consume-or-expel-window-right; }
+    Mod+Comma        { consume-window-into-column; }
+    Mod+Period       { expel-window-from-column; }
+
+    // ── System ───────────────────────────────────────────────────
+    // O'chirish menyusini ochish uchun
+    Mod+Shift+E hotkey-overlay-title="Power Menu (wlogout)" { spawn "/home/husniddin/.local/bin/wlogout-menu"; }
+    Ctrl+Alt+Delete  { quit; }
+    Mod+Shift+P      { power-off-monitors; }
+    Mod+Escape allow-inhibiting=false { toggle-keyboard-shortcuts-inhibit; }
+
+    // Reload config
+    Mod+Shift+r { spawn "niri" "msg" "action" "load-config-file"; }
+}
+
+cursor {
+    // Kursor temasini ko'rsatish (masalan, kursor atrofida yorqin doirasi bor tema)
+    // xcursor-theme "volantes_cursors"
+
+    // Kursor hajmini kattalashtirish (standart 24, yaxshi ko'rinishi uchun 32 yoki 48 qiling)
+    // xcursor-size 36
+}

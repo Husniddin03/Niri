@@ -1,0 +1,43 @@
+[global]
+font = JetBrainsMono Nerd Font 11
+corner_radius = 12
+origin = top-right
+offset = 12x12
+width = (340, 420)
+padding = 14
+horizontal_padding = 16
+frame_width = 1
+frame_color = "#89b4fa"
+separator_color = frame
+hide_duplicate_count = true
+stack_duplicates = true
+icon_position = left
+min_icon_size = 32
+max_icon_size = 48
+icon_path = /usr/share/icons/Papirus-Dark/48x48/status/:/usr/share/icons/Papirus/48x48/status/:/usr/share/icons/Papirus-Dark/48x48/apps/:/usr/share/icons/Papirus/48x48/apps/:/usr/share/icons/hicolor/48x48/apps/:/usr/share/pixmaps/
+progress_bar = true
+progress_bar_height = 8
+progress_bar_frame_width = 0
+progress_bar_min_width = 200
+progress_bar_max_width = 360
+format = "<b>%s</b>\n%b"
+
+[urgency_low]
+background = "#1e1e2e"
+foreground = "#cdd6f4"
+highlight = "#89b4fa"
+timeout = 3
+
+[urgency_normal]
+background = "#1e1e2e"
+foreground = "#cdd6f4"
+highlight = "#89b4fa"
+timeout = 5
+
+[urgency_critical]
+background = "#1e1e2e"
+foreground = "#f38ba8"
+frame_color = "#f38ba8"
+highlight = "#f38ba8"
+timeout = 0
+

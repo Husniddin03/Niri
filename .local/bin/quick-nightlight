@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# ==============================================================================
+# Night Light Toggle (wlsunset - Wayland Native)
+# ==============================================================================
+export PATH="/home/husniddin/.local/bin:$PATH"
+
+if pgrep -x wlsunset >/dev/null || pgrep -x gammastep >/dev/null; then
+    pkill -x wlsunset 2>/dev/null
+    pkill -x gammastep 2>/dev/null
+    notify-send "Tungi rejim o'chirildi ☀️" "Ekran asl haroratiga qaytarildi (6500K)" \
+        -i weather-clear -t 3000 -a "Night Light"
+else
+    # 3500K is clearly visible and protects eyes from blue light
+    /home/husniddin/.local/bin/wlsunset -t 3500 -T 6500 -s 00:00 -S 23:59 >/tmp/wlsunset.log 2>&1 &
+    sleep 0.2
+    if pgrep -x wlsunset >/dev/null; then
+        notify-send "Tungi rejim yoqildi 🌙" "Ko'z himoyasi faol (3500K iliq tus)" \
+            -i weather-clear-night -t 3000 -a "Night Light"
+    else
+        ERR=$(cat /tmp/wlsunset.log 2>/dev/null)
+        notify-send "Xatolik" "Tungi rejim yoqilmadi: $ERR" -i dialog-error -t 4000 -a "Night Light"
+    fi
+fi

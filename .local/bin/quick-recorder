@@ -1,0 +1,63 @@
+#!/usr/bin/env bash
+# ==============================================================================
+# Screen Recorder (Video MP4 / GIF) with Live Floating Controller Widget
+# ==============================================================================
+export PATH="/home/husniddin/.local/bin:$PATH"
+
+INFO_FILE="/tmp/quick_recorder_info.json"
+REC_PID=$(pgrep -x wf-recorder)
+
+if [ -n "$REC_PID" ]; then
+    # Toggle stop from shortcut if widget wasn't clicked
+    pkill -f "recorder-bar" 2>/dev/null
+    kill -INT "$REC_PID" 2>/dev/null
+    
+    while pgrep -x wf-recorder >/dev/null; do
+        sleep 0.1
+    done
+
+    if [ -f "$INFO_FILE" ]; then
+        SAVED_FILE=$(grep -o '"file": "[^"]*' "$INFO_FILE" | cut -d'"' -f4)
+        rm -f "$INFO_FILE"
+        if [ -f "$SAVED_FILE" ] && [ -s "$SAVED_FILE" ]; then
+            echo -n "$SAVED_FILE" | wl-copy
+            notify-send "Yozib olish yakunlandi ✓" "Fayl saqlandi:\n$(basename "$SAVED_FILE")\n(Yo'li buferga olindi)" \
+                -i video-x-generic -t 4500 -a "Screen Recorder"
+        fi
+    fi
+    exit 0
+fi
+
+# Start new recording
+MODE="${1:-mp4}"
+OUT_DIR="$HOME/Videos/Recordings"
+mkdir -p "$OUT_DIR"
+
+pkill -x slurp 2>/dev/null
+GEO=$(slurp -d -c "#f38ba8ff" -b "#00000044" -w 2 2>/dev/null)
+[ -z "$GEO" ] && exit 0
+
+TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
+
+if [ "$MODE" = "gif" ]; then
+    OUT_FILE="$OUT_DIR/record_${TIMESTAMP}.gif"
+    /home/husniddin/.local/bin/wf-recorder -c gif -g "$GEO" -f "$OUT_FILE" >/tmp/wf_recorder.log 2>&1 &
+    WF_PID=$!
+else
+    OUT_FILE="$OUT_DIR/record_${TIMESTAMP}.mp4"
+    /home/husniddin/.local/bin/wf-recorder -a -g "$GEO" -f "$OUT_FILE" >/tmp/wf_recorder.log 2>&1 &
+    WF_PID=$!
+fi
+
+# Give wf-recorder 0.2s to start and verify it didn't fail
+sleep 0.2
+if ! kill -0 "$WF_PID" 2>/dev/null; then
+    ERR=$(head -n 5 /tmp/wf_recorder.log)
+    notify-send "Xatolik" "wf-recorder ishga tushmadi:\n$ERR" -i dialog-error -t 5000 -a "Screen Recorder"
+    exit 1
+fi
+
+echo "{\"pid\": $WF_PID, \"file\": \"$OUT_FILE\", \"mode\": \"$MODE\"}" > "$INFO_FILE"
+
+# Launch floating on-screen controller bar (timer, pause/resume, stop)
+python3 /home/husniddin/.local/bin/recorder-bar "$MODE" "$WF_PID" "$OUT_FILE" >/tmp/recorder_bar.log 2>&1 &

@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+
+HOTSPOT_CON="NiriHotspot"
+IFACE="wlo1"
+
+ACTIVE_CON=$(nmcli -t -f NAME,DEVICE connection show --active | grep ":${IFACE}$" | cut -d: -f1)
+
+if [ "$ACTIVE_CON" = "$HOTSPOT_CON" ] || [ -n "$ACTIVE_CON" ]; then
+    nmcli connection down "$HOTSPOT_CON" >/dev/null 2>&1 || nmcli device disconnect "$IFACE" >/dev/null 2>&1
+    echo "🛑 Hotspot (Niri) o'chirildi."
+else
+    echo "ℹ️  Hotspot allaqachon o'chiq."
+fi

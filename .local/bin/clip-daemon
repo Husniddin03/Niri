@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+# Kill old watchers
+pkill -f "wl-paste.*clip-save" 2>/dev/null
+
+export WAYLAND_DISPLAY="${WAYLAND_DISPLAY:-wayland-1}"
+
+# Single unified watcher (NO deadlock with Firefox or multi-mime apps)
+exec wl-paste --watch /home/husniddin/.local/bin/clip-save

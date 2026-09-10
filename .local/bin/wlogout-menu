@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+
+# Toggle if running
+if pgrep -x wlogout >/dev/null; then
+    pkill -x wlogout
+    exit 0
+fi
+
+export XDG_DATA_DIRS="/usr/share:/usr/local/share:$HOME/.local/share:$HOME/.local/share/flatpak/exports/share:/var/lib/flatpak/exports/share:${XDG_DATA_DIRS}"
+
+exec wlogout \
+    -b 6 \
+    -c 20 \
+    -r 20 \
+    -T 390 \
+    -B 390 \
+    -L 180 \
+    -R 180 \
+    --layout "$HOME/.config/wlogout/layout" \
+    --css "$HOME/.config/wlogout/style.css"

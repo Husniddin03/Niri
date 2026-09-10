@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# ==============================================================================
+# Wayland Color Picker (Pipette)
+# ==============================================================================
+
+pkill -x slurp 2>/dev/null
+
+POINT=$(slurp -p 2>/dev/null)
+[ -z "$POINT" ] && exit 0
+
+RAW_HEX=$(grim -g "$POINT" -t ppm - 2>/dev/null | convert - -format "%[hex:p{0,0}]" info: 2>/dev/null | cut -c 1-6)
+[ -z "$RAW_HEX" ] && exit 1
+
+HEX="#${RAW_HEX}"
+
+R=$(printf "%d" "0x${RAW_HEX:0:2}")
+G=$(printf "%d" "0x${RAW_HEX:2:2}")
+B=$(printf "%d" "0x${RAW_HEX:4:2}")
+RGB="rgb($R, $G, $B)"
+
+echo -n "$HEX" | wl-copy
+
+# Create small color thumbnail for notification
+PREVIEW="/tmp/color_preview_${RAW_HEX}.png"
+convert -size 48x48 xc:"$HEX" "$PREVIEW" 2>/dev/null
+
+notify-send "Rang nusxalandi ✓" "$HEX  ($RGB)" \
+    -i "$PREVIEW" \
+    -t 4000 \
+    -a "Color Picker"

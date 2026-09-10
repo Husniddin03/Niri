@@ -1,0 +1,36 @@
+{
+    "label" : "lock",
+    "action" : "swaylock",
+    "text" : "Qulflash (L)",
+    "keybind" : "l"
+}
+{
+    "label" : "hibernate",
+    "action" : "systemctl hibernate",
+    "text" : "Gibrid (H)",
+    "keybind" : "h"
+}
+{
+    "label" : "logout",
+    "action" : "niri msg action quit --skip-confirmation",
+    "text" : "Chiqish (E)",
+    "keybind" : "e"
+}
+{
+    "label" : "suspend",
+    "action" : "systemctl suspend",
+    "text" : "Kutish (U)",
+    "keybind" : "u"
+}
+{
+    "label" : "reboot",
+    "action" : "systemctl reboot",
+    "text" : "Qayta yuklash (R)",
+    "keybind" : "r"
+}
+{
+    "label" : "shutdown",
+    "action" : "systemctl poweroff",
+    "text" : "O'chirish (S)",
+    "keybind" : "s"
+}
