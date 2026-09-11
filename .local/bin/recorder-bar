@@ -228,13 +228,16 @@ class RecorderBar(Gtk.Window):
                 "notify-send", "Yozib olish bekor qilindi", "Video saqlanmadi",
                 "-i", "dialog-warning", "-t", "2500", "-a", "Screen Recorder"
             ], stderr=subprocess.DEVNULL)
-        else:
-            if os.path.exists(self.out_file) and os.path.getsize(self.out_file) > 1000:
-                subprocess.run(["wl-copy"], input=self.out_file, text=True)
-                base = os.path.basename(self.out_file)
+            abs_path = os.path.abspath(self.out_file)
+            if os.path.exists(abs_path) and os.path.getsize(abs_path) > 1000:
+                try:
+                    subprocess.run(["wl-copy", abs_path], stderr=subprocess.DEVNULL)
+                    subprocess.run(["wl-copy", "--primary", abs_path], stderr=subprocess.DEVNULL)
+                except Exception:
+                    pass
                 subprocess.run([
                     "notify-send", "Yozib olish yakunlandi ✓",
-                    f"Fayl saqlandi:\n{base}\n(Fayl yo'li buferga olindi)",
+                    f"To'liq manzil nusxalandi:\n{abs_path}",
                     "-i", "video-x-generic", "-t", "4500", "-a", "Screen Recorder"
                 ], stderr=subprocess.DEVNULL)
 
