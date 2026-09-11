@@ -1,0 +1,99 @@
+{
+    // ── Claude Code va Ishchi Muhit ──────────────────────────────
+    "claudeCode.preferredLocation": "panel",
+    "chat.viewSessions.orientation": "stacked",
+
+    // ── Interfeys va Tashqi Ko'rinish ────────────────────────────
+    "workbench.activityBar.location": "bottom",
+    "window.titleBarStyle": "native",
+    "window.customTitleBarVisibility": "never",
+    "window.menuBarVisibility": "toggle",
+    "workbench.statusBar.visible": true,
+    "editor.scrollbar.vertical": "hidden",
+    "editor.scrollbar.horizontal": "hidden",
+
+    // ── Muharrir Qulayliklari ────────────────────────────────────
+    "editor.formatOnSave": true,
+    "editor.autoClosingBrackets": "always",
+    "editor.autoClosingQuotes": "always",
+    "editor.linkedEditing": true,
+    "explorer.confirmDelete": false,
+    "explorer.confirmPasteNative": false,
+    "explorer.compactFolders": false,
+    "explorer.autoReveal": true,
+    "files.autoSave": "afterDelay",
+    "editor.unicodeHighlight.ambiguousCharacters": false,
+    "diffEditor.codeLens": true,
+
+    // ── Til Formatterlari ────────────────────────────────────────
+    "[php]": {
+        "editor.defaultFormatter": "vscode.php-language-features"
+    },
+    "[javascript]": {
+        "editor.defaultFormatter": "vscode.typescript-language-features"
+    },
+    "[html]": {
+        "editor.defaultFormatter": "vscode.html-language-features"
+    },
+    "[css]": {
+        "editor.defaultFormatter": "vscode.css-language-features"
+    },
+    "[vue]": {
+        "editor.defaultFormatter": "vscode.typescript-language-features"
+    },
+    "editor.quickSuggestions": {
+        "other": true,
+        "comments": false,
+        "strings": true
+    },
+    "editor.codeActionsOnSave": {
+        "source.organizeImports": "explicit"
+    },
+
+    // ── ⚡ MAKSIMAL YENGILLASHTIRISH VA RAM OPTIMIZATSIYASI ──────
+    // 1. Minimapni o'chirish (GPU va har bir tab render xotirasini tejaydi)
+    "editor.minimap.enabled": false,
+
+    // 2. Telemetriya va foniy tahlillarni to'xtatish
+    "telemetry.telemetryLevel": "off",
+    "workbench.enableExperiments": false,
+    "workbench.settings.enableNaturalLanguageSearch": false,
+    "npm.fetchOnlinePackageInfo": false,
+
+    // 3. Git foniy so'rovlarini to'xtatish (faqat qo'lda buyruq berganda ishlaydi)
+    "git.enableSmartCommit": true,
+    "git.autofetch": false,
+
+    // 4. Animatsiyalarni soddalashtirish (protsessor va kursor laglarini yo'qotadi)
+    "editor.cursorSmoothCaretAnimation": "off",
+    "editor.smoothScrolling": false,
+    "workbench.list.smoothScrolling": false,
+
+    // 5. File Watcher: og'ir gigant papkalarni doimiy monitoringdan chiqarish (juda katta RAM tejaydi)
+    "files.watcherExclude": {
+        "**/.git/objects/**": true,
+        "**/.git/subtree-cache/**": true,
+        "**/node_modules/**": true,
+        "**/vendor/**": true,
+        "**/.venv/**": true,
+        "**/venv/**": true,
+        "**/dist/**": true,
+        "**/build/**": true,
+        "**/.cache/**": true
+    },
+
+    // 6. Qidiruvdan keraksiz kataloglarni chetlatish
+    "search.followSymlinks": false,
+    "search.exclude": {
+        "**/node_modules": true,
+        "**/vendor": true,
+        "**/dist": true,
+        "**/build": true,
+        "**/.git": true,
+        "**/.venv": true
+    },
+
+    // Boshqa foydali sozlamalar
+    "database-client.autoSync": true,
+    "containers.containerClient": "com.microsoft.visualstudio.containers.docker"
+}

@@ -21,7 +21,7 @@ fi
 
 # 3. .config papkalarini nusxalash / link qilish
 echo "📦 Konfiguratsiyalar joylanmoqda..."
-for dir in niri waybar dunst mako swaylock wlogout fuzzel foot niri-gestures quick-ai; do
+for dir in niri waybar dunst mako swaylock wlogout fuzzel foot niri-gestures quick-ai Code; do
     if [ -d "$DOTFILES_DIR/.config/$dir" ]; then
         mkdir -p "$HOME/.config/$dir"
         cp -r "$DOTFILES_DIR/.config/$dir/"* "$HOME/.config/$dir/" 2>/dev/null || true
