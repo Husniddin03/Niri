@@ -225,12 +225,15 @@ binds {
         spawn "/home/husniddin/.local/bin/quick-colorpicker";
     }
 
-    // ── Ekran yozuvchisi (Video MP4 va GIF) ──────────────────────
+    // ── Ekran va Ovoz yozuvchisi (Video MP4, GIF va Audio MP3) ───
     Mod+Alt+R hotkey-overlay-title="Ekran yozish (MP4 video)" {
         spawn "/home/husniddin/.local/bin/quick-recorder" "mp4";
     }
     Mod+Alt+G hotkey-overlay-title="Ekran yozish (GIF)" {
         spawn "/home/husniddin/.local/bin/quick-recorder" "gif";
+    }
+    Mod+Alt+A hotkey-overlay-title="Ovoz yozish (MP3 audio)" {
+        spawn "/home/husniddin/.local/bin/quick-audio-record";
     }
 
     // ── Tungi rejim (Night Light / Ko'z himoyasi) ────────────────

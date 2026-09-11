@@ -15,7 +15,8 @@ Bu repository Linux (Wayland) muhitida **Niri** scrollable tiling oynalar meneje
 * **Sun'iy intellekt va foydali vositalar**:
   * 🎙️ **`quick-voice` (`Mod+Space`)**: Bosib turib ovoz yoziladi, qoʻyib yuborilganda 1 soniyada Gemini orqali aniq matnga aylanib avtomatik kursor joyiga yoziladi.
   * 👁️ **`quick-ocr` (`Mod+X`)**: Ekranning istalgan qismidagi matnni internetsiz tezkor ajratib olib clipboard'ga nusxalaydi.
-  * 🎥 **`quick-recorder` (`Mod+Alt+R`)**: Ekran yoki tanlangan oynani yozib olish (taymer paneli bilan).
+  * 🎥 **`quick-recorder` (`Mod+Alt+R` / `Mod+Alt+G`)**: Ekran yoki tanlangan hududni video (MP4) yoki GIF qilib yozib olish.
+  * 🎧 **`quick-audio-record` (`Mod+Alt+A`)**: Ovozni MP3 formatida yozib olish (ekranning burchagidagi ixcham iconli vidjet orqali boshqariladi).
   * 📋 **`clip-menu` (`Mod+V`)**: Rasm va matnlar tarixi bilan bufer boshqaruvi.
   * 🌙 **`quick-nightlight` (`Mod+Shift+N`)**: Tungi rejim (koʻzni asrash uchun 3500K iliq tus).
   * 🖐️ **`niri-gestures`**: Kamera orqali qoʻl harakatlari yordamida kursorni va tizimni boshqarish moduli.
@@ -29,6 +30,9 @@ Bu repository Linux (Wayland) muhitida **Niri** scrollable tiling oynalar meneje
 | `Mod + Return` | Terminalni ochish (`foot`) |
 | `Mod + D` | Ilovalar menyusi (`fuzzel`) |
 | `Mod + Space` | 🎙️ Ovoz orqali yozish (Diktant / Speech-to-Text) |
+| `Mod + Alt + A` | 🎧 Ovoz yozish (MP3 audio recorder) |
+| `Mod + Alt + R` | 🎥 Ekran videosini yozish (MP4) |
+| `Mod + Alt + G` | 🎞️ Ekrandan GIF yozish |
 | `Mod + V` | 📋 Nusxalar tarixi (Clipboard History) |
 | `Mod + X` | 👁️ Ekranning qismini tanlab matn ajratib olish (OCR) |
 | `Mod + Shift + N` | 🌙 Tungi rejimni yoqish / oʻchirish (Night Light) |

@@ -1,0 +1,287 @@
+#!/usr/bin/env python3
+import os
+import sys
+import time
+import signal
+import subprocess
+
+import gi
+gi.require_version("Gtk", "3.0")
+gi.require_version("GtkLayerShell", "0.1")
+from gi.repository import Gtk, Gdk, GLib, GtkLayerShell
+
+CSS = b"""
+window {
+    background-color: transparent;
+}
+.rec-pill {
+    background-color: rgba(17, 19, 24, 0.92);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 20px;
+    padding: 3px 8px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+}
+.rec-dot-active {
+    color: #ff5555;
+    font-size: 13px;
+    font-weight: 800;
+}
+.rec-dot-paused {
+    color: #f1fa8c;
+    font-size: 13px;
+    font-weight: 800;
+}
+.rec-timer {
+    color: #f8f8f2;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 13px;
+    font-weight: 700;
+    margin-left: 4px;
+    margin-right: 6px;
+}
+.rec-sep {
+    color: rgba(255, 255, 255, 0.20);
+    margin: 0 2px;
+    font-size: 12px;
+}
+.btn-icon {
+    background: transparent;
+    border: none;
+    border-radius: 10px;
+    padding: 3px 7px;
+    font-size: 13px;
+    color: #f8f8f2;
+    transition: all 120ms ease;
+}
+.btn-icon:hover {
+    background-color: rgba(255, 255, 255, 0.15);
+}
+.btn-save {
+    color: #50fa7b;
+}
+.btn-save:hover {
+    background-color: rgba(80, 250, 123, 0.22);
+    color: #50fa7b;
+}
+.btn-cancel {
+    color: #ff6e6e;
+}
+.btn-cancel:hover {
+    background-color: rgba(255, 85, 85, 0.22);
+    color: #ff5555;
+}
+"""
+
+class AudioBar(Gtk.Window):
+    def __init__(self, out_file=None):
+        super().__init__()
+
+        # Destination path setup
+        if out_file:
+            self.out_file = out_file
+        else:
+            out_dir = os.path.expanduser("~/Music/Recordings")
+            os.makedirs(out_dir, exist_ok=True)
+            timestamp = time.strftime("%Y%m%d_%H%M%S")
+            self.out_file = os.path.join(out_dir, f"audio_{timestamp}.mp3")
+
+        # Spawn ffmpeg audio recorder
+        self.proc = subprocess.Popen(
+            [
+                "ffmpeg", "-nostdin", "-y",
+                "-f", "pulse", "-i", "default",
+                "-acodec", "libmp3lame", "-q:a", "2",
+                self.out_file
+            ],
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            preexec_fn=os.setpgrp
+        )
+
+        self.start_time = time.time()
+        self.elapsed_offset = 0
+        self.is_paused = False
+        self.dot_visible = True
+        self.is_finalizing = False
+
+        # LayerShell floating placement (Top Right corner, subtle & unobtrusive)
+        GtkLayerShell.init_for_window(self)
+        GtkLayerShell.set_layer(self, GtkLayerShell.Layer.OVERLAY)
+        GtkLayerShell.set_anchor(self, GtkLayerShell.Edge.TOP, True)
+        GtkLayerShell.set_anchor(self, GtkLayerShell.Edge.RIGHT, True)
+        GtkLayerShell.set_margin(self, GtkLayerShell.Edge.TOP, 12)
+        GtkLayerShell.set_margin(self, GtkLayerShell.Edge.RIGHT, 16)
+        GtkLayerShell.set_keyboard_mode(self, GtkLayerShell.KeyboardMode.NONE)
+
+        style_provider = Gtk.CssProvider()
+        style_provider.load_from_data(CSS)
+        Gtk.StyleContext.add_provider_for_screen(
+            Gdk.Screen.get_default(),
+            style_provider,
+            Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+        )
+
+        box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=3)
+        box.get_style_context().add_class("rec-pill")
+
+        # Status dot (●)
+        self.lbl_dot = Gtk.Label(label="●")
+        self.lbl_dot.get_style_context().add_class("rec-dot-active")
+        box.pack_start(self.lbl_dot, False, False, 0)
+
+        # Seconds timer (00:00)
+        self.lbl_timer = Gtk.Label(label="00:00")
+        self.lbl_timer.get_style_context().add_class("rec-timer")
+        box.pack_start(self.lbl_timer, False, False, 0)
+
+        # Separator (|)
+        sep = Gtk.Label(label="|")
+        sep.get_style_context().add_class("rec-sep")
+        box.pack_start(sep, False, False, 0)
+
+        # Pause / Resume Button (ICON ONLY: ⏸ / ▶)
+        self.btn_pause = Gtk.Button(label="⏸")
+        self.btn_pause.set_tooltip_text("Pauza / Davom ettirish")
+        self.btn_pause.get_style_context().add_class("btn-icon")
+        self.btn_pause.connect("clicked", self.on_toggle_pause)
+        box.pack_start(self.btn_pause, False, False, 0)
+
+        # Stop & Save Button (ICON ONLY: 💾)
+        self.btn_save = Gtk.Button(label="💾")
+        self.btn_save.set_tooltip_text("Saqlash")
+        self.btn_save.get_style_context().add_class("btn-icon")
+        self.btn_save.get_style_context().add_class("btn-save")
+        self.btn_save.connect("clicked", self.on_save)
+        box.pack_start(self.btn_save, False, False, 0)
+
+        # Cancel & Discard Button (ICON ONLY: ✕)
+        btn_cancel = Gtk.Button(label="✕")
+        btn_cancel.set_tooltip_text("Bekor qilish")
+        btn_cancel.get_style_context().add_class("btn-icon")
+        btn_cancel.get_style_context().add_class("btn-cancel")
+        btn_cancel.connect("clicked", self.on_cancel)
+        box.pack_start(btn_cancel, False, False, 0)
+
+        self.add(box)
+        self.connect("destroy", Gtk.main_quit)
+
+        # Handle external toggle signals (SIGUSR1 / SIGTERM -> Save & Exit)
+        GLib.unix_signal_add(GLib.PRIORITY_DEFAULT, signal.SIGUSR1, self.handle_sigusr1)
+        GLib.unix_signal_add(GLib.PRIORITY_DEFAULT, signal.SIGTERM, self.handle_sigusr1)
+
+        GLib.timeout_add(1000, self.update_timer)
+
+    def handle_sigusr1(self):
+        self.finalize_exit(cancelled=False)
+        return False
+
+    def update_timer(self):
+        if self.is_finalizing:
+            return False
+
+        if self.proc.poll() is not None:
+            self.finalize_exit(cancelled=False)
+            return False
+
+        if not self.is_paused:
+            elapsed = int(time.time() - self.start_time) + self.elapsed_offset
+            mins = elapsed // 60
+            secs = elapsed % 60
+            self.lbl_timer.set_text(f"{mins:02d}:{secs:02d}")
+            self.dot_visible = not self.dot_visible
+            self.lbl_dot.set_opacity(1.0 if self.dot_visible else 0.35)
+        return True
+
+    def on_toggle_pause(self, widget):
+        if self.is_finalizing:
+            return
+
+        if not self.is_paused:
+            try:
+                self.proc.send_signal(signal.SIGSTOP)
+            except Exception:
+                pass
+            self.elapsed_offset += int(time.time() - self.start_time)
+            self.is_paused = True
+            self.btn_pause.set_label("▶")
+            self.lbl_dot.get_style_context().remove_class("rec-dot-active")
+            self.lbl_dot.get_style_context().add_class("rec-dot-paused")
+            self.lbl_dot.set_opacity(1.0)
+        else:
+            try:
+                self.proc.send_signal(signal.SIGCONT)
+            except Exception:
+                pass
+            self.start_time = time.time()
+            self.is_paused = False
+            self.btn_pause.set_label("⏸")
+            self.lbl_dot.get_style_context().remove_class("rec-dot-paused")
+            self.lbl_dot.get_style_context().add_class("rec-dot-active")
+
+    def on_save(self, widget):
+        self.finalize_exit(cancelled=False)
+
+    def on_cancel(self, widget):
+        self.finalize_exit(cancelled=True)
+
+    def finalize_exit(self, cancelled=False):
+        if self.is_finalizing:
+            return
+        self.is_finalizing = True
+
+        if self.is_paused:
+            try:
+                self.proc.send_signal(signal.SIGCONT)
+            except Exception:
+                pass
+
+        if cancelled:
+            try:
+                self.proc.terminate()
+                self.proc.wait(timeout=1.0)
+            except Exception:
+                try:
+                    self.proc.kill()
+                except Exception:
+                    pass
+
+            try:
+                if os.path.exists(self.out_file):
+                    os.remove(self.out_file)
+            except Exception:
+                pass
+
+            subprocess.run([
+                "notify-send", "Ovoz yozish bekor qilindi", "Audio fayli saqlanmadi",
+                "-i", "dialog-warning", "-t", "2500", "-a", "Audio Recorder"
+            ], stderr=subprocess.DEVNULL)
+        else:
+            try:
+                self.proc.send_signal(signal.SIGINT)
+                self.proc.wait(timeout=2.5)
+            except Exception:
+                try:
+                    self.proc.terminate()
+                except Exception:
+                    pass
+
+            if os.path.exists(self.out_file) and os.path.getsize(self.out_file) > 500:
+                subprocess.run(["wl-copy"], input=self.out_file, text=True)
+                base = os.path.basename(self.out_file)
+                subprocess.run([
+                    "notify-send", "Ovoz yozildi ✓",
+                    f"Fayl saqlandi:\n{base}\n(Fayl yo'li buferga olindi)",
+                    "-i", "audio-x-generic", "-t", "4500", "-a", "Audio Recorder"
+                ], stderr=subprocess.DEVNULL)
+
+        Gtk.main_quit()
+
+def main():
+    out_file = sys.argv[1] if len(sys.argv) > 1 else None
+    win = AudioBar(out_file)
+    win.show_all()
+    Gtk.main()
+
+if __name__ == "__main__":
+    main()

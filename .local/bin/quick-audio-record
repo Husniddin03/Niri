@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# ==============================================================================
+# Quick Audio Recorder (MP3) - Toggle Launcher & Floating Pill Controller
+# ==============================================================================
+export PATH="/home/husniddin/.local/bin:$PATH"
+
+BAR_PID=$(pgrep -f "/home/husniddin/.local/bin/audio-bar")
+
+if [ -n "$BAR_PID" ]; then
+    # Agar audio-bar ishlab turgan bo'lsa - tugma qayta bosilganda saqlab to'xtatadi
+    kill -SIGUSR1 "$BAR_PID" 2>/dev/null
+else
+    # Yangi audio yozuvni boshlash
+    python3 /home/husniddin/.local/bin/audio-bar >/tmp/audio_bar.log 2>&1 &
+fi
