@@ -4,13 +4,23 @@ import os
 import json
 import hashlib
 import time
+import signal
 import subprocess
+
+# ── 1. Watchdog: Maksimal 2 soniya (osilib qolishni 100% oldini oladi) ────────
+signal.alarm(2)
 
 CACHE_DIR = os.path.expanduser("~/.cache/clip_history")
 IMAGES_DIR = os.path.join(CACHE_DIR, "images")
 HISTORY_FILE = os.path.join(CACHE_DIR, "history.json")
 
 os.makedirs(IMAGES_DIR, exist_ok=True)
+
+# Chegaralar (Katta ma'lumotlarda tizim qotib qolmasligi uchun)
+MAX_PAYLOAD = 2 * 1024 * 1024       # 2 MB dan katta oqimlarni tarixga kiritmaymiz
+MAX_TEXT_STORE = 100 * 1024         # Matn uchun maksimal 100 KB (tarix shishib ketmasligi uchun)
+MAX_IMAGE_SIZE = 5 * 1024 * 1024    # Rasm uchun maksimal 5 MB
+MAX_HISTORY_ENTRIES = 40            # Maksimal 40 ta yozuv
 
 def load_history():
     if os.path.exists(HISTORY_FILE):
@@ -22,10 +32,10 @@ def load_history():
     return []
 
 def save_history(history):
-    history = history[:60] # Keep last 60 entries
+    history = history[:MAX_HISTORY_ENTRIES]
     tmp_file = HISTORY_FILE + ".tmp"
     with open(tmp_file, "w", encoding="utf-8") as f:
-        json.dump(history, f, ensure_ascii=False, indent=2)
+        json.dump(history, f, ensure_ascii=False, indent=1)
     os.replace(tmp_file, HISTORY_FILE)
 
 def is_image(b):
@@ -44,14 +54,36 @@ def is_image(b):
     return None
 
 try:
-    raw_bytes = sys.stdin.buffer.read()
-    if not raw_bytes or len(raw_bytes) == 0:
+    # ── 2. Xavfsiz chunked o'qish (Hajm nazorati bilan) ──────────────────────
+    chunks = []
+    total_bytes = 0
+    overflow = False
+
+    while True:
+        chunk = sys.stdin.buffer.read(65536)
+        if not chunk:
+            break
+        total_bytes += len(chunk)
+        if total_bytes > MAX_PAYLOAD:
+            overflow = True
+            # Pipe tiqilib manba dastur qotmasligi uchun qolganini tezda bo'shatamiz
+            while sys.stdin.buffer.read(65536):
+                pass
+            break
+        chunks.append(chunk)
+
+    if overflow or not chunks:
+        # Juda katta hajmdagi ma'lumot yoki bo'sh oqim — tarixga saqlanmaydi, dastur darhol ozod bo'ladi
         sys.exit(0)
 
+    raw_bytes = b"".join(chunks)
     img_type = is_image(raw_bytes)
 
     if img_type:
-        # ── Handle image ──────────────────────────────────────────────
+        # ── 3. Rasm bilan ishlash ─────────────────────────────────────────────
+        if len(raw_bytes) > MAX_IMAGE_SIZE:
+            sys.exit(0)
+
         img_hash = hashlib.md5(raw_bytes).hexdigest()[:16]
         img_path = os.path.join(IMAGES_DIR, f"{img_hash}.{img_type}")
         thumb_path = os.path.join(IMAGES_DIR, f"{img_hash}_thumb.png")
@@ -63,11 +95,24 @@ try:
         if not os.path.exists(img_path):
             with open(img_path, "wb") as f:
                 f.write(raw_bytes)
-            subprocess.run(["convert", img_path, "-thumbnail", "64x64^", "-gravity", "center", "-extent", "64x64", thumb_path], stderr=subprocess.DEVNULL)
+            # Timeout 1.0s bilan thumbnail yaratish (CPU tiqilmasligi uchun)
+            try:
+                subprocess.run(
+                    ["convert", img_path, "-thumbnail", "64x64^", "-gravity", "center", "-extent", "64x64", thumb_path],
+                    stderr=subprocess.DEVNULL, timeout=1.0
+                )
+            except Exception:
+                pass
 
         history = [h for h in history if not (h.get("type") == "image" and h.get("hash") == img_hash)]
 
-        dim_out = subprocess.run(["identify", "-format", "%wx%h", img_path], capture_output=True, text=True).stdout.strip()
+        dim_out = ""
+        try:
+            res = subprocess.run(["identify", "-format", "%wx%h", img_path], capture_output=True, text=True, timeout=0.8)
+            dim_out = res.stdout.strip()
+        except Exception:
+            pass
+
         preview_text = f"📷 Rasm ({dim_out})" if dim_out else f"📷 Nusxalangan rasm ({img_type})"
 
         history.insert(0, {
@@ -81,7 +126,7 @@ try:
         save_history(history)
 
     else:
-        # ── Handle text ───────────────────────────────────────────────
+        # ── 4. Matn bilan ishlash ──────────────────────────────────────────────
         try:
             data = raw_bytes.decode("utf-8")
         except UnicodeDecodeError:
@@ -96,15 +141,19 @@ try:
 
         history = [h for h in history if not (h.get("type") == "text" and h.get("content") == data)]
 
-        first_line = data.strip().splitlines()[0] if data.strip().splitlines() else ""
+        lines = data.strip().splitlines()
+        first_line = lines[0] if lines else ""
         if len(first_line) > 60:
             first_line = first_line[:57] + "..."
-        if len(data.strip().splitlines()) > 1:
+        if len(lines) > 1:
             first_line += " 📑"
+
+        # Agar matn juda katta bo'lsa, contentni kesib saqlaymiz
+        store_data = data[:MAX_TEXT_STORE] if len(data) > MAX_TEXT_STORE else data
 
         history.insert(0, {
             "type": "text",
-            "content": data,
+            "content": store_data,
             "preview": first_line,
             "time": int(time.time())
         })
