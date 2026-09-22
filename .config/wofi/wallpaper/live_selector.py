@@ -65,6 +65,19 @@ def ensure_swww_desktop():
                 break
             time.sleep(0.02)
 
+def ensure_swww_overview():
+    uid = os.getuid()
+    sock = f"/run/user/{uid}/swww-wayland-overview.socket"
+    link = f"/run/user/{uid}/wayland-overview"
+    if not os.path.exists(link):
+        subprocess.run(["ln", "-sf", f"/run/user/{uid}/{os.environ.get('WAYLAND_DISPLAY', 'wayland-1')}", link], check=False)
+    if not os.path.exists(sock) or not subprocess.run(["pgrep", "-f", "swww-overview-daemon"], capture_output=True).stdout:
+        subprocess.Popen(["/home/husniddin/.config/niri/scripts/overview-daemon-start.sh"])
+        for _ in range(30):
+            if os.path.exists(sock):
+                break
+            time.sleep(0.02)
+
 class LiveWallpaperSelector(Gtk.Window):
     def __init__(self):
         super().__init__()
@@ -370,6 +383,7 @@ class LiveWallpaperSelector(Gtk.Window):
                 ensure_swww_desktop()
                 subprocess.Popen(["swww", "img", path] + transition_args)
         else: # overview
+            ensure_swww_overview()
             env = os.environ.copy()
             env["WAYLAND_DISPLAY"] = "wayland-overview"
             if item_type == "shuffle":
@@ -394,6 +408,13 @@ class LiveWallpaperSelector(Gtk.Window):
         item_type = self.selected_item["type"]
         path = self.selected_item["path"]
 
+        transition_args = [
+            "--transition-type", "wipe",
+            "--transition-angle", "0",
+            "--transition-fps", "60",
+            "--transition-duration", "0.45"
+        ]
+
         if self.mode == "wallpaper":
             if item_type == "transparent":
                 with open(CURRENT_WP_CACHE, "w") as f:
@@ -408,6 +429,8 @@ class LiveWallpaperSelector(Gtk.Window):
 
                 with open(CURRENT_WP_CACHE, "w") as f:
                     f.write(final_path)
+                ensure_swww_desktop()
+                subprocess.Popen(["swww", "img", final_path] + transition_args)
                 subprocess.Popen(["notify-send", "🖼️ Fon rasmi", "Asosiy ekran foni yangilandi", "-i", final_path, "-u", "low"])
         else: # overview
             final_path = path
@@ -417,6 +440,11 @@ class LiveWallpaperSelector(Gtk.Window):
 
             with open(CURRENT_OVERVIEW_CACHE, "w") as f:
                 f.write(final_path)
+
+            ensure_swww_overview()
+            env = os.environ.copy()
+            env["WAYLAND_DISPLAY"] = "wayland-overview"
+            subprocess.Popen(["swww", "img", final_path] + transition_args, env=env)
             subprocess.Popen(["notify-send", "🌌 Overview Foni", "Overview orqa foni yangilandi", "-i", final_path, "-u", "low"])
 
         self.close()
@@ -511,6 +539,7 @@ class LiveWallpaperSelector(Gtk.Window):
                 ensure_swww_desktop()
                 subprocess.Popen(["swww", "img", self.initial_path] + transition_args)
             else:
+                ensure_swww_overview()
                 env = os.environ.copy()
                 env["WAYLAND_DISPLAY"] = "wayland-overview"
                 subprocess.Popen(["swww", "img", self.initial_path] + transition_args, env=env)
