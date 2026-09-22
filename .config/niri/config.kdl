@@ -89,6 +89,11 @@ layer-rule {
     match namespace="^wallpaper$"
     place-within-backdrop true
 }
+
+layer-rule {
+    match namespace="^niri-backdr$"
+    place-within-backdrop true
+}
 // ── Startup ──────────────────────────────────────────────────────
 // DBus va Systemd muhit o'zgaruvchilarini yangilash (birinchi navbatda)
 spawn-at-startup "dbus-update-environment" "--systemd" "WAYLAND_DISPLAY" "XDG_CURRENT_DESKTOP" "XDG_SESSION_TYPE"
@@ -106,7 +111,7 @@ spawn-at-startup "waybar"
 spawn-at-startup "sh" "-c" "bash ~/.config/niri/niri-event-listener.sh"
 
 // Fon rasmi (Overview backdrop va SWWW daemon)
-spawn-at-startup "sh" "-c" "[ -f ~/.cache/current_overview_backdrop ] && swaybg -i $(cat ~/.cache/current_overview_backdrop) -m fill || swaybg -i /home/husniddin/Pictures/Wallpapers/obmqa6r-imgur.jpg -m fill"
+spawn-at-startup "/home/husniddin/.config/niri/scripts/overview-daemon-start.sh"
 spawn-at-startup "sh" "-c" "sleep 0.1 && [ \"$(cat ~/.cache/current_wallpaper 2>/dev/null)\" != 'transparent' ] && swww-daemon"
 
 // Qo'shimcha xizmatlar va yordamchilar

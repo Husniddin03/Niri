@@ -1,0 +1,89 @@
+/* ==========================================================================
+   Wofi Wallpaper & Overview Gallery — Modern Dark Glassmorphic Theme
+   ========================================================================== */
+
+* {
+    border: none;
+    outline: none;
+    font-family: "SF Pro Display", "SF Pro Text", "Noto Sans", sans-serif;
+}
+
+window {
+    background-color: rgba(20, 21, 24, 0.96);
+    border: 1.5px solid rgba(255, 255, 255, 0.15);
+    border-radius: 20px;
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.75);
+}
+
+#outer-box {
+    margin: 16px;
+    padding: 4px;
+    background: transparent;
+}
+
+#input {
+    background-color: rgba(255, 255, 255, 0.08);
+    border: 1.5px solid rgba(255, 255, 255, 0.14);
+    border-radius: 14px;
+    padding: 10px 16px;
+    color: #ffffff;
+    font-size: 15px;
+    font-weight: 500;
+    margin: 4px 6px 14px 6px;
+}
+
+#input:focus {
+    border: 1.5px solid #10b981;
+    background-color: rgba(255, 255, 255, 0.12);
+}
+
+#inner-box {
+    margin: 2px;
+    background: transparent;
+}
+
+#scroll {
+    margin: 0px;
+    border: none;
+}
+
+#entry {
+    padding: 0px;
+    margin: 6px;
+    background-color: transparent;
+    border: none;
+    box-shadow: none;
+    transition: all 0.2s ease-in-out;
+}
+
+#entry:selected {
+    background-color: transparent;
+    border: none;
+    box-shadow: none;
+}
+
+#img {
+    border-radius: 12px;
+    border: 2.5px solid transparent;
+}
+
+#entry:selected #img {
+    border: 2.5px solid #10b981;
+    box-shadow: 0 0 16px rgba(16, 185, 129, 0.6);
+}
+
+#text {
+    margin: 0px;
+    padding: 0px;
+}
+
+scrollbar {
+    background: transparent;
+    border: none;
+}
+
+scrollbar slider {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 6px;
+    min-width: 4px;
+}
