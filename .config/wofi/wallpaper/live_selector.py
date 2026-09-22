@@ -37,7 +37,6 @@ try:
 except Exception:
     pass
 
-import cairo
 import gi
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
@@ -55,6 +54,7 @@ WP_DIR = os.path.expanduser("~/Pictures/Wallpapers")
 CACHE_DIR = os.path.expanduser("~/.cache/wallpaper-selector")
 CURRENT_WP_CACHE = os.path.expanduser("~/.cache/current_wallpaper")
 CURRENT_OVERVIEW_CACHE = os.path.expanduser("~/.cache/current_overview_backdrop")
+CSS_FILE = os.path.expanduser("~/.config/wofi/wallpaper/wallpaper.css")
 
 def ensure_swww_desktop():
     sock = f"/run/user/{os.getuid()}/swww-wayland-1.socket"
@@ -75,15 +75,13 @@ class LiveWallpaperSelector(Gtk.Window):
         self.user_navigated = False
         self.initial_path = self.get_current_wallpaper()
 
-        # 1. Enable RGBA visual for true glass transparency
+        # 1. Enable RGBA visual for window transparency
         screen = self.get_screen()
         visual = screen.get_rgba_visual()
         if visual:
             self.set_visual(visual)
-        self.set_app_paintable(True)
-        self.connect("draw", self.on_draw)
 
-        # 2. GtkLayerShell configuration
+        # 2. GtkLayerShell overlay configuration
         GtkLayerShell.init_for_window(self)
         GtkLayerShell.set_namespace(self, "wallpaper-selector")
         GtkLayerShell.set_layer(self, GtkLayerShell.Layer.OVERLAY)
@@ -95,8 +93,8 @@ class LiveWallpaperSelector(Gtk.Window):
         GtkLayerShell.set_anchor(self, GtkLayerShell.Edge.LEFT, False)
         GtkLayerShell.set_anchor(self, GtkLayerShell.Edge.RIGHT, False)
 
-        # Explicit size request: 920px width x 660px height
-        self.set_size_request(920, 660)
+        # Standard 890x680 size from wallpaper.conf
+        self.set_size_request(890, 680)
 
         self.cards_data = []
         self.pending_wallpapers = []
@@ -106,13 +104,6 @@ class LiveWallpaperSelector(Gtk.Window):
 
         self.connect("destroy", self.on_destroy)
         self.connect("key-press-event", self.on_key_press)
-
-    def on_draw(self, widget, cr):
-        # Clear window surface with full alpha transparency
-        cr.set_source_rgba(0, 0, 0, 0)
-        cr.set_operator(cairo.OPERATOR_SOURCE)
-        cr.paint()
-        return False
 
     def get_current_wallpaper(self):
         cache_file = CURRENT_OVERVIEW_CACHE if self.mode == "overview" else CURRENT_WP_CACHE
@@ -125,14 +116,9 @@ class LiveWallpaperSelector(Gtk.Window):
         return None
 
     def setup_ui(self):
-        # Outer container with rounded corners and semi-transparent dark glass background
         self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
         self.main_box.set_name("outer-box")
-        self.main_box.set_size_request(920, 660)
-        self.main_box.set_margin_top(12)
-        self.main_box.set_margin_bottom(12)
-        self.main_box.set_margin_start(12)
-        self.main_box.set_margin_end(12)
+        self.main_box.set_size_request(890, 680)
         self.add(self.main_box)
 
         # Header Search entry
@@ -146,8 +132,8 @@ class LiveWallpaperSelector(Gtk.Window):
         # Scrolled window
         self.scrolled = Gtk.ScrolledWindow()
         self.scrolled.set_name("scroll")
-        self.scrolled.set_min_content_width(880)
-        self.scrolled.set_min_content_height(570)
+        self.scrolled.set_min_content_width(850)
+        self.scrolled.set_min_content_height(580)
         self.scrolled.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
         self.main_box.pack_start(self.scrolled, True, True, 0)
 
@@ -157,8 +143,6 @@ class LiveWallpaperSelector(Gtk.Window):
         self.flowbox.set_valign(Gtk.Align.START)
         self.flowbox.set_max_children_per_line(3)
         self.flowbox.set_min_children_per_line(3)
-        self.flowbox.set_column_spacing(12)
-        self.flowbox.set_row_spacing(12)
         self.flowbox.set_selection_mode(Gtk.SelectionMode.SINGLE)
         self.flowbox.set_homogeneous(True)
         self.flowbox.connect("selected-children-changed", self.on_selection_changed)
@@ -166,10 +150,11 @@ class LiveWallpaperSelector(Gtk.Window):
         self.flowbox.connect("button-press-event", self.on_flowbox_button_press)
         self.scrolled.add(self.flowbox)
 
+        # Load initial cards immediately!
+        self.load_initial_cards()
+
     def on_flowbox_button_press(self, widget, event):
         self.user_navigated = True
-
-        self.load_initial_cards()
 
     def load_initial_cards(self):
         # 1. Shuffle card
@@ -186,7 +171,7 @@ class LiveWallpaperSelector(Gtk.Window):
         # 3. Queue all wallpapers from WP_DIR
         if os.path.isdir(WP_DIR):
             all_files = sorted([f for f in os.listdir(WP_DIR) if f.lower().endswith((".jpg", ".jpeg", ".png"))])
-            # Load first 24 wallpapers immediately so UI opens with 0 lag
+            # Load first 24 wallpapers immediately so UI opens instantly with images displayed
             first_batch = all_files[:24]
             self.pending_wallpapers = all_files[24:]
 
@@ -216,7 +201,6 @@ class LiveWallpaperSelector(Gtk.Window):
             if os.path.isfile(thumb):
                 self.add_card("image", full_path, thumb, name=base)
 
-        self.flowbox.show_all()
         return bool(self.pending_wallpapers)
 
     def add_card(self, item_type, target_path, thumb_path, name=""):
@@ -235,6 +219,7 @@ class LiveWallpaperSelector(Gtk.Window):
         img.set_name("img")
         box.pack_start(img, True, True, 0)
         child.add(box)
+        child.show_all()
 
         self.flowbox.add(child)
         self.cards_data.append({
@@ -245,62 +230,69 @@ class LiveWallpaperSelector(Gtk.Window):
         })
 
     def apply_css(self):
-        css = b"""
-        window {
-            background-color: transparent;
-            background: transparent;
-        }
-        #outer-box {
-            background-color: rgba(18, 20, 26, 0.82);
-            border: 1.5px solid rgba(255, 255, 255, 0.16);
-            border-radius: 20px;
-            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.7);
-        }
-        #input {
-            background-color: rgba(255, 255, 255, 0.08);
-            border: 1.5px solid rgba(255, 255, 255, 0.14);
-            border-radius: 14px;
-            padding: 10px 16px;
-            color: #ffffff;
-            font-size: 15px;
-            font-weight: 500;
-            margin: 4px 6px 10px 6px;
-        }
-        #input:focus {
-            border: 1.5px solid #10b981;
-            background-color: rgba(255, 255, 255, 0.12);
-        }
-        #entry {
-            padding: 3px;
-            margin: 4px;
-            background-color: transparent;
-            border-radius: 14px;
-            border: 2.5px solid transparent;
-            transition: all 0.12s ease-in-out;
-        }
-        #entry:selected {
-            background-color: transparent;
-            border: 2.5px solid #10b981;
-            box-shadow: 0 0 16px rgba(16, 185, 129, 0.75);
-        }
-        #img {
-            border-radius: 10px;
-        }
-        scrollbar {
-            background: transparent;
-            border: none;
-        }
-        scrollbar slider {
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 6px;
-            min-width: 4px;
-        }
-        scrollbar slider:hover {
-            background: rgba(16, 185, 129, 0.6);
-        }
-        """
         provider = Gtk.CssProvider()
-        provider.load_from_data(css)
+        if os.path.isfile(CSS_FILE):
+            provider.load_from_path(CSS_FILE)
+        else:
+            css = b"""
+            window {
+                background-color: rgba(20, 21, 24, 0.96);
+                border: 1.5px solid rgba(255, 255, 255, 0.15);
+                border-radius: 20px;
+                box-shadow: 0 25px 60px rgba(0, 0, 0, 0.75);
+            }
+            #outer-box {
+                margin: 16px;
+                padding: 4px;
+                background: transparent;
+            }
+            #input {
+                background-color: rgba(255, 255, 255, 0.08);
+                border: 1.5px solid rgba(255, 255, 255, 0.14);
+                border-radius: 14px;
+                padding: 10px 16px;
+                color: #ffffff;
+                font-size: 15px;
+                font-weight: 500;
+                margin: 4px 6px 14px 6px;
+            }
+            #input:focus {
+                border: 1.5px solid #10b981;
+                background-color: rgba(255, 255, 255, 0.12);
+            }
+            #entry {
+                padding: 0px;
+                margin: 6px;
+                background-color: transparent;
+                border: none;
+                box-shadow: none;
+                transition: all 0.2s ease-in-out;
+            }
+            #entry:selected {
+                background-color: transparent;
+                border: none;
+                box-shadow: none;
+            }
+            #img {
+                border-radius: 12px;
+                border: 2.5px solid transparent;
+            }
+            #entry:selected #img {
+                border: 2.5px solid #10b981;
+                box-shadow: 0 0 16px rgba(16, 185, 129, 0.6);
+            }
+            scrollbar {
+                background: transparent;
+                border: none;
+            }
+            scrollbar slider {
+                background: rgba(255, 255, 255, 0.15);
+                border-radius: 6px;
+                min-width: 4px;
+            }
+            """
+            provider.load_from_data(css)
+
         Gtk.StyleContext.add_provider_for_screen(
             Gdk.Screen.get_default(),
             provider,
@@ -311,7 +303,6 @@ class LiveWallpaperSelector(Gtk.Window):
         return [item for item in self.cards_data if item["child"].get_visible()]
 
     def on_search_changed(self, entry):
-        # If user searches, finish loading pending wallpapers so search finds everything
         if self.pending_wallpapers:
             while self.pending_wallpapers:
                 self.load_background_batch()
@@ -323,6 +314,7 @@ class LiveWallpaperSelector(Gtk.Window):
             item["child"].set_visible(match)
             if match and first_visible is None:
                 first_visible = item["child"]
+
         if first_visible:
             was_nav = self.user_navigated
             self.flowbox.select_child(first_visible)
@@ -391,6 +383,7 @@ class LiveWallpaperSelector(Gtk.Window):
         return False
 
     def on_child_activated(self, flowbox, child):
+        self.user_navigated = True
         self.confirm_and_close()
 
     def confirm_and_close(self):
