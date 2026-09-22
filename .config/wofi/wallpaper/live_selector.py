@@ -72,6 +72,7 @@ class LiveWallpaperSelector(Gtk.Window):
         self.selected_item = None
         self.preview_timer_id = None
         self.idle_loader_id = None
+        self.user_navigated = False
         self.initial_path = self.get_current_wallpaper()
 
         # 1. Enable RGBA visual for true glass transparency
@@ -162,7 +163,11 @@ class LiveWallpaperSelector(Gtk.Window):
         self.flowbox.set_homogeneous(True)
         self.flowbox.connect("selected-children-changed", self.on_selection_changed)
         self.flowbox.connect("child-activated", self.on_child_activated)
+        self.flowbox.connect("button-press-event", self.on_flowbox_button_press)
         self.scrolled.add(self.flowbox)
+
+    def on_flowbox_button_press(self, widget, event):
+        self.user_navigated = True
 
         self.load_initial_cards()
 
@@ -319,7 +324,11 @@ class LiveWallpaperSelector(Gtk.Window):
             if match and first_visible is None:
                 first_visible = item["child"]
         if first_visible:
+            was_nav = self.user_navigated
             self.flowbox.select_child(first_visible)
+            if not was_nav and self.preview_timer_id is not None:
+                GLib.source_remove(self.preview_timer_id)
+                self.preview_timer_id = None
 
     def on_selection_changed(self, flowbox):
         selected = flowbox.get_selected_children()
@@ -331,6 +340,9 @@ class LiveWallpaperSelector(Gtk.Window):
                 self.selected_item = item
                 break
 
+        if not self.user_navigated:
+            return
+
         # Debounce live preview by 70ms so rapid arrow navigation is smooth without stutter
         if self.preview_timer_id is not None:
             GLib.source_remove(self.preview_timer_id)
@@ -339,7 +351,7 @@ class LiveWallpaperSelector(Gtk.Window):
 
     def do_live_preview(self):
         self.preview_timer_id = None
-        if not self.selected_item:
+        if not self.user_navigated or not self.selected_item:
             return False
 
         item_type = self.selected_item["type"]
@@ -472,7 +484,8 @@ class LiveWallpaperSelector(Gtk.Window):
         else:
             return False
 
-        if new_idx != current_idx:
+        if new_idx != current_idx or not self.user_navigated:
+            self.user_navigated = True
             target_child = visible[new_idx]["child"]
             self.flowbox.select_child(target_child)
             
@@ -489,6 +502,10 @@ class LiveWallpaperSelector(Gtk.Window):
         return False
 
     def restore_initial_and_close(self):
+        if not self.user_navigated:
+            self.close()
+            return
+
         transition_args = [
             "--transition-type", "wipe",
             "--transition-angle", "0",
@@ -529,8 +546,27 @@ class LiveWallpaperSelector(Gtk.Window):
 if __name__ == "__main__":
     win = LiveWallpaperSelector()
     win.show_all()
-    # Select first child on startup
+
+    # Find matching card for current active wallpaper
+    initial_child = None
+    for item in win.cards_data:
+        if win.initial_path and item["path"] == win.initial_path:
+            initial_child = item["child"]
+            break
+        elif win.initial_path == "transparent" and item["type"] == "transparent":
+            initial_child = item["child"]
+            break
+
     visible = win.get_visible_items()
-    if visible:
+    if initial_child and initial_child.get_visible():
+        win.flowbox.select_child(initial_child)
+    elif visible:
         win.flowbox.select_child(visible[0]["child"])
+
+    # Ensure no preview runs until user actually moves with arrow keys or clicks
+    win.user_navigated = False
+    if win.preview_timer_id is not None:
+        GLib.source_remove(win.preview_timer_id)
+        win.preview_timer_id = None
+
     Gtk.main()
