@@ -9,4 +9,9 @@ if ! pgrep -f "swww-overview-daemon" > /dev/null; then
     sleep 0.2
 fi
 
+# Open overview so user directly sees the animated backdrop live preview!
+if command -v niri >/dev/null 2>&1; then
+    niri msg action open-overview >/dev/null 2>&1
+fi
+
 exec python3 "$HOME/.config/wofi/wallpaper/live_selector.py" --mode overview
