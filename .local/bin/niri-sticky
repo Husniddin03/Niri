@@ -1,0 +1,132 @@
+#!/usr/bin/env python3
+import sys
+import os
+import json
+import subprocess
+import signal
+
+STATE_FILE = "/tmp/niri-sticky-windows.json"
+
+def get_sticky_list():
+    if os.path.exists(STATE_FILE):
+        try:
+            with open(STATE_FILE, "r") as f:
+                return json.load(f)
+        except Exception:
+            return []
+    return []
+
+def save_sticky_list(data):
+    with open(STATE_FILE, "w") as f:
+        json.dump(data, f)
+
+def notify(title, message, icon="pin"):
+    subprocess.run(["notify-send", "-a", "Niri Sticky", "-i", icon, "-t", "2000", title, message], check=False)
+
+def toggle_sticky():
+    try:
+        out = subprocess.check_output(["niri", "msg", "-j", "focused-window"], text=True)
+        win = json.loads(out)
+    except Exception as e:
+        notify("Niri Sticky", f"Oynani aniqlab bo'lmadi: {e}")
+        return
+
+    win_id = win.get("id")
+    title = win.get("title", "Oyna")
+    is_floating = win.get("is_floating", False)
+
+    if not win_id:
+        return
+
+    sticky_list = get_sticky_list()
+
+    if win_id in sticky_list:
+        sticky_list.remove(win_id)
+        save_sticky_list(sticky_list)
+        if is_floating:
+            subprocess.run(["niri", "msg", "action", "toggle-window-floating"], check=False)
+        notify("Sticky Bekor Qilindi", f"'{title}' o'z joyiga qaytdi", "window-restore")
+    else:
+        # Agar floating bo'lmasa, uni floating qilamiz
+        if not is_floating:
+            subprocess.run(["niri", "msg", "action", "toggle-window-floating"], check=False)
+        sticky_list.append(win_id)
+        save_sticky_list(sticky_list)
+        notify("Sticky Oyna Faollashdi", f"'{title}' barcha ishchi stollarda ko'rinadi", "pin")
+
+def run_daemon():
+    # Eski faylni tozalash
+    save_sticky_list([])
+
+    p = subprocess.Popen(["niri", "msg", "-j", "event-stream"], stdout=subprocess.PIPE, text=True)
+
+    for line in iter(p.stdout.readline, ""):
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            event = json.loads(line)
+        except Exception:
+            continue
+
+        # 1. Ishchi stol o'zgarganda (WorkspaceActivated)
+        if "WorkspaceActivated" in event:
+            ws_id = event["WorkspaceActivated"].get("id")
+            if not ws_id:
+                continue
+
+            sticky_list = get_sticky_list()
+            if not sticky_list:
+                continue
+
+            # Sticky oynalarni yangi workspace-ga ko'chirish
+            # Oynalar hali mavjudligini tekshiramiz
+            try:
+                wins_raw = subprocess.check_output(["niri", "msg", "-j", "windows"], text=True)
+                current_windows = {w["id"]: w for w in json.loads(wins_raw)}
+            except Exception:
+                current_windows = {}
+
+            updated_list = []
+            for wid in sticky_list:
+                if wid in current_windows:
+                    win = current_windows[wid]
+                    updated_list.append(wid)
+                    if win.get("workspace_id") != ws_id:
+                        # Ko'chiramiz
+                        subprocess.run([
+                            "niri", "msg", "action",
+                            "move-window-to-workspace", str(ws_id),
+                            "--window-id", str(wid),
+                            "--focus", "false"
+                        ], check=False)
+            if updated_list != sticky_list:
+                save_sticky_list(updated_list)
+
+        # 2. Yangi oyna ochilganda: agar Picture-in-Picture bo'lsa, avtomatik sticky qilamiz
+        elif "WindowOpenedOrChanged" in event:
+            win = event["WindowOpenedOrChanged"].get("window", {})
+            wid = win.get("id")
+            title = win.get("title", "")
+            if wid and "Picture-in-Picture" in title:
+                sticky_list = get_sticky_list()
+                if wid not in sticky_list:
+                    sticky_list.append(wid)
+                    save_sticky_list(sticky_list)
+
+        # 3. Oyna yopilganda
+        elif "WindowClosed" in event:
+            wid = event["WindowClosed"].get("id")
+            if wid:
+                sticky_list = get_sticky_list()
+                if wid in sticky_list:
+                    sticky_list.remove(wid)
+                    save_sticky_list(sticky_list)
+
+if __name__ == "__main__":
+    if len(sys.argv) > 1 and sys.argv[1] == "toggle":
+        toggle_sticky()
+    elif len(sys.argv) > 1 and sys.argv[1] == "daemon":
+        run_daemon()
+    else:
+        print("Usage: niri-sticky [daemon|toggle]")

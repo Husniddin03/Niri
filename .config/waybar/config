@@ -1,4 +1,5 @@
 {
+  "output": ["eDP-1", "HDMI-A-2"],
   "layer": "top",
   "position": "top",
   "mode": "hide",
@@ -9,7 +10,7 @@
   "height": 10,
   "modules-left": [
     "custom/power",
-    "workspaces"
+    "custom/niri-ribbon"
   ],
   "modules-center": [
     "clock"
@@ -27,6 +28,14 @@
   ],
   "workspaces": {
     "format": "{icon}"
+  },
+  "custom/niri-ribbon": {
+    "exec": "/home/husniddin/.config/waybar/scripts/niri-ribbon.py",
+    "return-type": "json",
+    "interval": 1,
+    "format": "{}",
+    "on-click": "niri msg action toggle-overview",
+    "tooltip": true
   },
   "custom/power": {
     "format": "⏻",

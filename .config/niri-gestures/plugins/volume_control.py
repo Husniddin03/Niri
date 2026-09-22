@@ -9,6 +9,8 @@ class VolumeControlPlugin(BasePlugin):
         super().__init__(config)
         self.step_interval = float(self.config.get("interval", 0.30))
         self.last_step_time = 0.0
+        self.last_gesture = None
+        self.consecutive_frames = 0
 
     def on_event(self, event: dict):
         if not self.enabled:
@@ -17,7 +19,24 @@ class VolumeControlPlugin(BasePlugin):
         gesture = event.get("gesture")
         confidence = event.get("confidence", 0.0)
 
-        if confidence < 0.70:
+        if confidence < 0.72:
+            self.consecutive_frames = 0
+            self.last_gesture = None
+            return
+
+        if gesture in ("Thumb_Up", "Thumb_Down"):
+            if gesture == self.last_gesture:
+                self.consecutive_frames += 1
+            else:
+                self.last_gesture = gesture
+                self.consecutive_frames = 1
+        else:
+            self.consecutive_frames = 0
+            self.last_gesture = None
+            return
+
+        # At least 3 consecutive stable frames required
+        if self.consecutive_frames < 3:
             return
 
         now = time.time()
@@ -25,8 +44,8 @@ class VolumeControlPlugin(BasePlugin):
             return
 
         if gesture == "Thumb_Up":
-            self.run_cmd(["wpctl", "set-volume", "@DEFAULT_AUDIO_SINK@", "5%+"])
+            self.run_cmd(["/home/husniddin/.config/niri/scripts/volume.sh", "up"])
             self.last_step_time = now
         elif gesture == "Thumb_Down":
-            self.run_cmd(["wpctl", "set-volume", "@DEFAULT_AUDIO_SINK@", "5%-"])
+            self.run_cmd(["/home/husniddin/.config/niri/scripts/volume.sh", "down"])
             self.last_step_time = now

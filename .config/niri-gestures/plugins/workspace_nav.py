@@ -23,3 +23,11 @@ class WorkspaceNavPlugin(BasePlugin):
         elif dynamic_action == "swipe_right" and self.can_trigger():
             print("[workspace_nav] SWIPE RIGHT -> focus-column-left", flush=True)
             self.niri_action("focus-column-left")
+
+        elif dynamic_action == "swipe_up" and self.can_trigger():
+            print("[workspace_nav] SWIPE UP -> focus-workspace-down", flush=True)
+            self.niri_action("focus-workspace-down")
+
+        elif dynamic_action == "swipe_down" and self.can_trigger():
+            print("[workspace_nav] SWIPE DOWN -> focus-workspace-up", flush=True)
+            self.niri_action("focus-workspace-up")

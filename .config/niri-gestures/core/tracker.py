@@ -21,7 +21,7 @@ class VisionTracker:
                 options = vision.GestureRecognizerOptions(
                     base_options=base_options,
                     running_mode=vision.RunningMode.IMAGE,
-                    num_hands=1,
+                    num_hands=2,
                     min_hand_detection_confidence=0.5,
                     min_hand_presence_confidence=0.5,
                     min_tracking_confidence=0.5
@@ -58,6 +58,21 @@ class VisionTracker:
             self.cap.release()
             self.cap = None
 
+    def close(self):
+        self.stop_camera()
+        if self.hand_recognizer:
+            try:
+                self.hand_recognizer.close()
+            except Exception:
+                pass
+            self.hand_recognizer = None
+        if self.face_landmarker:
+            try:
+                self.face_landmarker.close()
+            except Exception:
+                pass
+            self.face_landmarker = None
+
     def read_frame(self):
         if self.cap is None or not self.cap.isOpened():
             self.start_camera()
@@ -78,7 +93,6 @@ class VisionTracker:
             face_res = self.face_landmarker.detect(mp_image)
             if face_res.face_landmarks and len(face_res.face_landmarks) > 0:
                 face_lm = face_res.face_landmarks[0]
-                # Landmark 1: Nose tip
                 nose_tip = (face_lm[1].x, face_lm[1].y, face_lm[1].z)
 
                 blink_left = 0.0
@@ -95,37 +109,90 @@ class VisionTracker:
                     "landmarks": [(lm.x, lm.y, lm.z) for lm in face_lm]
                 }
 
-        # 2. Hand tracking
+        # 2. Hand tracking (Up to 2 hands for full dual-hand gestures)
         if self.hand_recognizer:
             hand_res = self.hand_recognizer.recognize(mp_image)
             if hand_res.hand_landmarks and len(hand_res.hand_landmarks) > 0:
-                landmarks = [(lm.x, lm.y, lm.z) for lm in hand_res.hand_landmarks[0]]
-                gesture_name = "None"
-                confidence = 0.0
-                if hand_res.gestures and len(hand_res.gestures) > 0 and len(hand_res.gestures[0]) > 0:
-                    top_cat = hand_res.gestures[0][0]
-                    gesture_name = top_cat.category_name
-                    confidence = float(top_cat.score)
+                hands_list = []
+                for i in range(len(hand_res.hand_landmarks)):
+                    raw_lms = hand_res.hand_landmarks[i]
+                    landmarks = [(lm.x, lm.y, lm.z) for lm in raw_lms]
 
-                handedness = "Right"
-                if hand_res.handedness and len(hand_res.handedness) > 0 and len(hand_res.handedness[0]) > 0:
-                    handedness = hand_res.handedness[0][0].category_name
+                    gesture_name = "None"
+                    confidence = 0.0
+                    if hand_res.gestures and i < len(hand_res.gestures) and len(hand_res.gestures[i]) > 0:
+                        top_cat = hand_res.gestures[i][0]
+                        gesture_name = top_cat.category_name
+                        confidence = float(top_cat.score)
 
-                index_tip = (landmarks[8][0], landmarks[8][1])
-                thumb_tip = (landmarks[4][0], landmarks[4][1])
-                palm_center = (
-                    (landmarks[0][0] + landmarks[5][0] + landmarks[17][0]) / 3.0,
-                    (landmarks[0][1] + landmarks[5][1] + landmarks[17][1]) / 3.0
-                )
-                pinch_dist = math.hypot(index_tip[0] - thumb_tip[0], index_tip[1] - thumb_tip[1])
+                    handedness = "Right"
+                    if hand_res.handedness and i < len(hand_res.handedness) and len(hand_res.handedness[i]) > 0:
+                        handedness = hand_res.handedness[i][0].category_name
 
-                event["gesture"] = gesture_name
-                event["confidence"] = confidence
-                event["handedness"] = handedness
-                event["landmarks"] = landmarks
-                event["index_tip"] = index_tip
-                event["thumb_tip"] = thumb_tip
-                event["palm_center"] = palm_center
-                event["pinch_dist"] = pinch_dist
+                    wrist = landmarks[0]
+                    index_tip = (landmarks[8][0], landmarks[8][1])
+                    thumb_tip = (landmarks[4][0], landmarks[4][1])
+                    middle_tip = (landmarks[12][0], landmarks[12][1])
+                    palm_center = (
+                        (landmarks[0][0] + landmarks[5][0] + landmarks[17][0]) / 3.0,
+                        (landmarks[0][1] + landmarks[5][1] + landmarks[17][1]) / 3.0
+                    )
+
+                    # Hand scale (wrist to middle MCP)
+                    hand_scale = math.hypot(wrist[0] - landmarks[9][0], wrist[1] - landmarks[9][1])
+                    h_scale_safe = max(hand_scale, 0.03)
+
+                    # Distances
+                    d_thumb_index = math.hypot(thumb_tip[0] - index_tip[0], thumb_tip[1] - index_tip[1]) / h_scale_safe
+                    d_thumb_middle = math.hypot(thumb_tip[0] - middle_tip[0], thumb_tip[1] - middle_tip[1]) / h_scale_safe
+
+                    # Finger extensions
+                    def is_extended(tip_idx, pip_idx):
+                        d_tip = math.hypot(wrist[0] - landmarks[tip_idx][0], wrist[1] - landmarks[tip_idx][1])
+                        d_pip = math.hypot(wrist[0] - landmarks[pip_idx][0], wrist[1] - landmarks[pip_idx][1])
+                        return d_tip > d_pip * 1.15
+
+                    index_ext = is_extended(8, 6)
+                    middle_ext = is_extended(12, 10)
+                    ring_ext = is_extended(16, 14)
+                    pinky_ext = is_extended(20, 18)
+                    thumb_ext = math.hypot(wrist[0] - landmarks[4][0], wrist[1] - landmarks[4][1]) > math.hypot(wrist[0] - landmarks[2][0], wrist[1] - landmarks[2][1]) * 1.12
+
+                    hand_info = {
+                        "landmarks": landmarks,
+                        "gesture": gesture_name,
+                        "confidence": confidence,
+                        "handedness": handedness,
+                        "index_tip": index_tip,
+                        "thumb_tip": thumb_tip,
+                        "middle_tip": middle_tip,
+                        "palm_center": palm_center,
+                        "hand_scale": hand_scale,
+                        "pinch_dist": d_thumb_index,
+                        "pinch_middle_dist": d_thumb_middle,
+                        "index_extended": index_ext,
+                        "middle_extended": middle_ext,
+                        "ring_extended": ring_ext,
+                        "pinky_extended": pinky_ext,
+                        "thumb_extended": thumb_ext,
+                        "is_pointing": index_ext and not middle_ext and not ring_ext and not pinky_ext,
+                        "is_two_finger": index_ext and middle_ext and not ring_ext and not pinky_ext,
+                        "is_open_palm": index_ext and middle_ext and ring_ext and pinky_ext,
+                    }
+                    hands_list.append(hand_info)
+
+                event["hands"] = hands_list
+
+                # Primary hand (prefer Right hand or first detected hand)
+                primary = next((h for h in hands_list if h["handedness"] == "Right"), hands_list[0])
+                event["gesture"] = primary["gesture"]
+                event["confidence"] = primary["confidence"]
+                event["handedness"] = primary["handedness"]
+                event["landmarks"] = primary["landmarks"]
+                event["index_tip"] = primary["index_tip"]
+                event["thumb_tip"] = primary["thumb_tip"]
+                event["palm_center"] = primary["palm_center"]
+                event["pinch_dist"] = primary["pinch_dist"]
+                event["hand_scale"] = primary["hand_scale"]
 
         return frame, event if event else None

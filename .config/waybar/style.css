@@ -53,12 +53,19 @@ window#waybar {
 #battery,
 #temperature,
 #custom-net-speed,
+#custom-niri-ribbon,
 #custom-power {
     padding: 3px 10px;
     margin: 2px 2px;
     color: #e8e8ed; /* Toza kumushrang Apple matni */
     border-radius: 6px;
     transition: all 0.2s ease;
+}
+
+#custom-niri-ribbon.hidden-windows {
+    color: #ffd60a;
+    background: rgba(255, 214, 10, 0.15);
+    font-weight: 600;
 }
 
 /* HOVER EFFEKTI */

@@ -114,6 +114,25 @@ int main(int argc, char *argv[]) {
             zwlr_virtual_pointer_v1_button(vp, t, btn, WL_POINTER_BUTTON_STATE_RELEASED);
             zwlr_virtual_pointer_v1_frame(vp);
             wl_display_flush(dpy);
+        } else if (cmd == 's') {
+            // Scroll: s <dy>
+            double dy = 0.0;
+            if (sscanf(line + 1, "%lf", &dy) == 1) {
+                uint32_t t = get_time_ms();
+                zwlr_virtual_pointer_v1_axis_discrete(vp, t, 0, wl_fixed_from_double(dy * 15.0), (int32_t)dy);
+                zwlr_virtual_pointer_v1_frame(vp);
+                wl_display_flush(dpy);
+            }
+        } else if (cmd == 'a') {
+            // Absolute Move: a <x> <y> <x_extent> <y_extent>
+            uint32_t x = 0, y = 0, x_ext = 1920, y_ext = 1080;
+            int n = sscanf(line + 1, "%u %u %u %u", &x, &y, &x_ext, &y_ext);
+            if (n >= 2) {
+                uint32_t t = get_time_ms();
+                zwlr_virtual_pointer_v1_motion_absolute(vp, t, x, y, x_ext, y_ext);
+                zwlr_virtual_pointer_v1_frame(vp);
+                wl_display_flush(dpy);
+            }
         } else if (cmd == 'q') {
             break;
         }

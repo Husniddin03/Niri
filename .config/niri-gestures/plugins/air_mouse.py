@@ -6,25 +6,27 @@ from .base import BasePlugin
 
 class AirMousePlugin(BasePlugin):
     name = "air_mouse"
-    description = "Control mouse cursor with index finger; pinch thumb+index for left click/drag; pinch thumb+middle for right click"
+    description = "Index fingertip directly acts as the system mouse cursor (1:1 Absolute Tracking); pinch thumb+index for left click/drag; pinch thumb+middle for right click"
 
     def __init__(self, config=None):
         super().__init__(config)
-        # Tuned parameters for silky smooth, rock-solid cursor
-        self.sensitivity = float(self.config.get("sensitivity", 1400.0))
-        self.deadzone = float(self.config.get("deadzone", 0.0035)) # filters micro-tremors
         self.waymouse_bin = shutil.which("waymouse") or "/home/husniddin/.local/bin/waymouse"
         self.proc = None
         self._init_proc()
 
-        # State tracking
-        self.prev_x = None
-        self.prev_y = None
-        self.smooth_dx = 0.0
-        self.smooth_dy = 0.0
+        # Margins to allow comfortable full-screen reach without overstretching hand
+        self.margin_x = float(self.config.get("margin_x", 0.08))
+        self.margin_y = float(self.config.get("margin_y", 0.08))
+
+        # Absolute coordinates & smoothing
+        self.smooth_x = None
+        self.smooth_y = None
         self.left_pressed = False
         self.right_pressed = False
         self.last_pointing_time = 0.0
+        self.pinch_start_time = 0.0
+        self.is_dragging = False
+        self.freeze_pos = None
 
     def _init_proc(self):
         try:
@@ -72,17 +74,23 @@ class AirMousePlugin(BasePlugin):
             self._reset_tracking()
             return
 
-        # Check if Index is extended
+        screen_w = float(event.get("screen_w", 1920))
+        screen_h = float(event.get("screen_h", 1080))
+
+        # Natural pointing detection: Index extended, not a full open palm
         d_idx_tip = self._dist(lm[0], lm[8])
         d_idx_pip = self._dist(lm[0], lm[6])
-        idx_extended = d_idx_tip > d_idx_pip * 1.15
+        idx_extended = d_idx_tip > d_idx_pip * 1.12
 
-        # Check if other 3 fingers are curled
-        mid_folded = self._dist(lm[0], lm[12]) < self._dist(lm[0], lm[10]) * 1.25
-        rng_folded = self._dist(lm[0], lm[16]) < self._dist(lm[0], lm[14]) * 1.20
-        pnk_folded = self._dist(lm[0], lm[20]) < self._dist(lm[0], lm[18]) * 1.20
+        mid_folded = self._dist(lm[0], lm[12]) < self._dist(lm[0], lm[10]) * 1.28
+        rng_folded = self._dist(lm[0], lm[16]) < self._dist(lm[0], lm[14]) * 1.25
+        pnk_folded = self._dist(lm[0], lm[20]) < self._dist(lm[0], lm[18]) * 1.25
 
-        is_pointing_pose = idx_extended and mid_folded and rng_folded and pnk_folded
+        gesture = event.get("gesture", "")
+        is_open_palm = gesture == "Open_Palm" or (idx_extended and not mid_folded and not rng_folded and not pnk_folded)
+        is_two_finger = idx_extended and not mid_folded and rng_folded and pnk_folded
+
+        is_pointing_pose = idx_extended and not is_open_palm and not is_two_finger
 
         # Pinch detection (normalized by hand_scale)
         thumb_idx_dist = self._dist(lm[4], lm[8]) / hand_scale
@@ -90,72 +98,69 @@ class AirMousePlugin(BasePlugin):
 
         now = time.time()
 
-        # 1. Left Click & Hold (Thumb + Index)
-        if thumb_idx_dist < 0.28:
+        # 1. Left Click & Hold / Drag (Thumb + Index pinch with Click-Freeze)
+        if thumb_idx_dist < 0.32:
             if not self.left_pressed:
-                self._send("d left")
                 self.left_pressed = True
+                self.pinch_start_time = now
+                self.is_dragging = False
+                if self.smooth_x is not None and self.smooth_y is not None:
+                    self.freeze_pos = (self.smooth_x, self.smooth_y)
+                self._send("d left")
         elif thumb_idx_dist > 0.38:
             if self.left_pressed:
                 self._send("u left")
                 self.left_pressed = False
+                self.is_dragging = False
+                self.freeze_pos = None
 
-        # 2. Right Click (Thumb + Middle)
+        # 2. Right Click (Thumb + Middle pinch)
         if thumb_mid_dist < 0.30:
             if not self.right_pressed:
                 self._send("d right")
                 self.right_pressed = True
-        elif thumb_mid_dist > 0.40:
+        elif thumb_mid_dist > 0.42:
             if self.right_pressed:
                 self._send("u right")
                 self.right_pressed = False
 
-        # 3. Smooth & Stabilized Motion Tracking
-        if is_pointing_pose or self.left_pressed:
+        # 3. Direct Fingertip Cursor (Absolute 1:1 Positioning)
+        if (is_pointing_pose or self.left_pressed) and not is_open_palm:
             self.last_pointing_time = now
-            curr_x, curr_y = lm[8][0], lm[8][1]
+            raw_x, raw_y = lm[8][0], lm[8][1] # Index fingertip landmark
 
-            if self.prev_x is not None and self.prev_y is not None:
-                dx_raw = curr_x - self.prev_x
-                dy_raw = curr_y - self.prev_y
-                dist_raw = math.hypot(dx_raw, dy_raw)
+            # Map from camera frame to screen coordinates
+            target_sx = min(max(0.0, (raw_x - self.margin_x) / (1.0 - 2.0 * self.margin_x)), 1.0) * screen_w
+            target_sy = min(max(0.0, (raw_y - self.margin_y) / (1.0 - 2.0 * self.margin_y)), 1.0) * screen_h
 
-                if dist_raw <= self.deadzone:
-                    # Tremor deadband: gradually decay momentum to completely freeze cursor
-                    self.smooth_dx *= 0.4
-                    self.smooth_dy *= 0.4
-                    if abs(self.smooth_dx) < 0.05: self.smooth_dx = 0.0
-                    if abs(self.smooth_dy) < 0.05: self.smooth_dy = 0.0
-                else:
-                    # Adaptive dynamic smoothing:
-                    # Fast hand movements -> low smoothing (instant response)
-                    # Slow hand movements -> high smoothing (surgical stability)
-                    adaptive_alpha = min(max(dist_raw * 45.0, 0.20), 0.75)
+            # Click-Freeze protection: If pinch just started, freeze cursor to avoid misclicks
+            if self.left_pressed and self.freeze_pos is not None:
+                if not self.is_dragging:
+                    dist_from_freeze = math.hypot(target_sx - self.freeze_pos[0], target_sy - self.freeze_pos[1])
+                    if (now - self.pinch_start_time > 0.25) and (dist_from_freeze > 28.0):
+                        self.is_dragging = True
+                    else:
+                        target_sx, target_sy = self.freeze_pos
 
-                    target_dx = dx_raw * self.sensitivity
-                    target_dy = dy_raw * self.sensitivity
+            if self.smooth_x is None or self.smooth_y is None:
+                self.smooth_x = target_sx
+                self.smooth_y = target_sy
+            else:
+                dist = math.hypot(target_sx - self.smooth_x, target_sy - self.smooth_y)
+                if dist > 1.2:
+                    alpha = min(max(dist / 38.0, 0.45), 0.90)
+                    self.smooth_x = alpha * target_sx + (1.0 - alpha) * self.smooth_x
+                    self.smooth_y = alpha * target_sy + (1.0 - alpha) * self.smooth_y
 
-                    self.smooth_dx = adaptive_alpha * target_dx + (1.0 - adaptive_alpha) * self.smooth_dx
-                    self.smooth_dy = adaptive_alpha * target_dy + (1.0 - adaptive_alpha) * self.smooth_dy
-
-                    # Precision curve: small motions remain gentle, fast motions accelerate
-                    speed = math.hypot(self.smooth_dx, self.smooth_dy)
-                    accel = 1.0 + min(speed / 60.0, 1.2)
-
-                    dx_final = self.smooth_dx * accel
-                    dy_final = self.smooth_dy * accel
-
-                    if abs(dx_final) > 0.1 or abs(dy_final) > 0.1:
-                        self._send(f"m {dx_final:.2f} {dy_final:.2f}")
-
-            self.prev_x = curr_x
-            self.prev_y = curr_y
+            # Move system cursor
+            ix_int = int(round(self.smooth_x))
+            iy_int = int(round(self.smooth_y))
+            self._send(f"a {ix_int} {iy_int} {int(screen_w)} {int(screen_h)}")
         else:
             if now - self.last_pointing_time > 0.15:
-                self.prev_x = None
-                self.prev_y = None
-                self.smooth_dx = 0.0
-                self.smooth_dy = 0.0
+                self.smooth_x = None
+                self.smooth_y = None
+                self.freeze_pos = None
 
     def _reset_tracking(self):
         if self.left_pressed:
@@ -164,10 +169,8 @@ class AirMousePlugin(BasePlugin):
         if self.right_pressed:
             self._send("u right")
             self.right_pressed = False
-        self.prev_x = None
-        self.prev_y = None
-        self.smooth_dx = 0.0
-        self.smooth_dy = 0.0
+        self.smooth_x = None
+        self.smooth_y = None
 
     def __del__(self):
         if self.proc:

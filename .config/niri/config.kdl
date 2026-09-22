@@ -65,8 +65,7 @@ layout {
         inactive-color "#00000000"
     }
 
-    background-color "#22224488"
-    //background-color "#00000066"
+    background-color "transparent"
 
     // Oyna borderlarini (chegaralarini) butunlay o'chiramiz
     border {
@@ -79,34 +78,44 @@ layout {
     }
 }
 
+overview {
+    workspace-shadow {
+        off
+    }
+}
+
 // Fon rasmini Overview backdrop (orqa foni) ichiga joylashtirish qoidasi
 layer-rule {
     match namespace="^wallpaper$"
     place-within-backdrop true
 }
-spawn-at-startup "sh" "-c" "[ -f ~/.cache/current_overview_backdrop ] && swaybg -i $(cat ~/.cache/current_overview_backdrop) -m fill || swaybg -i /home/husniddin/Pictures/Wallpapers/space.jpeg -m fill"
-
-spawn-at-startup "dunst"
 // ── Startup ──────────────────────────────────────────────────────
-spawn-at-startup "waybar"
-
-spawn-at-startup "sh" "-c" "sleep 0.1 && swww-daemon"
-
+// DBus va Systemd muhit o'zgaruvchilarini yangilash (birinchi navbatda)
 spawn-at-startup "dbus-update-environment" "--systemd" "WAYLAND_DISPLAY" "XDG_CURRENT_DESKTOP" "XDG_SESSION_TYPE"
-
-spawn-at-startup "sh" "-c" "waybar -s ~/.config/waybar/launch.css"
-spawn-at-startup "sh" "-c" "bash ~/.config/niri/niri-event-listener.sh"
-spawn-at-startup "sh" "-c" "~/.config/niri/hotcorner"
-
-spawn-at-startup "sh" "-c" "~/.config/waybar/scripts/battery-alert.sh &"
-spawn-at-startup "/home/husniddin/.local/bin/clip-daemon"
-
-// Waybar va swaybg uchun atrof-muhit o'zgaruvchilarini import qilish
-spawn-at-startup "systemctl" "--user" "import-environment" "WAYLAND_DISPLAY" "XDG_CURRENT_DESKTOP" "XDG_SESSION_TYPE"
-spawn-at-startup "systemctl" "--user" "import-environment" "XDG_DATA_DIRS"
+spawn-at-startup "systemctl" "--user" "import-environment" "WAYLAND_DISPLAY" "XDG_CURRENT_DESKTOP" "XDG_SESSION_TYPE" "XDG_DATA_DIRS"
 spawn-at-startup "dbus-update-activation-environment" "--systemd" "WAYLAND_DISPLAY" "XDG_CURRENT_DESKTOP" "XDG_SESSION_TYPE"
 
-// Ekran quvvatini tejash va qulflash uchun swayidle va niri-lock ishga tushirish
+// Polkit autentifikatsiya agenti (GUI root/sudo so'rovlari uchun)
+spawn-at-startup "/usr/lib/policykit-1-gnome/polkit-gnome-authentication-agent-1"
+
+// Bildirishnomalar (Dunst)
+spawn-at-startup "dunst"
+
+// Status bar (Waybar)
+spawn-at-startup "waybar"
+spawn-at-startup "sh" "-c" "bash ~/.config/niri/niri-event-listener.sh"
+
+// Fon rasmi (Overview backdrop va SWWW daemon)
+spawn-at-startup "sh" "-c" "[ -f ~/.cache/current_overview_backdrop ] && swaybg -i $(cat ~/.cache/current_overview_backdrop) -m fill || swaybg -i /home/husniddin/Pictures/Wallpapers/obmqa6r-imgur.jpg -m fill"
+spawn-at-startup "sh" "-c" "sleep 0.1 && [ \"$(cat ~/.cache/current_wallpaper 2>/dev/null)\" != 'transparent' ] && swww-daemon"
+
+// Qo'shimcha xizmatlar va yordamchilar
+spawn-at-startup "sh" "-c" "~/.config/niri/hotcorner"
+spawn-at-startup "sh" "-c" "~/.config/waybar/scripts/battery-alert.sh &"
+spawn-at-startup "/home/husniddin/.local/bin/clip-daemon"
+spawn-at-startup "/home/husniddin/.local/bin/niri-sticky" "daemon"
+
+// Ekran quvvatini tejash va qulflash uchun swayidle va niri-lock
 spawn-at-startup "swayidle" "-w" \
     "timeout" "3600" "niri msg action power-off-monitors" \
     "resume" "niri msg action power-on-monitors" \
@@ -123,6 +132,24 @@ environment {
 // ── Animations ───────────────────────────────────────────────────
 animations {
     slowdown 0.8
+
+    workspace-switch {
+        spring damping-ratio=1.0 stiffness=1000 epsilon=0.0001
+    }
+
+    horizontal-view-movement {
+        spring damping-ratio=1.0 stiffness=900 epsilon=0.0001
+    }
+
+    window-open {
+        duration-ms 200
+        curve "ease-out-expo"
+    }
+
+    window-close {
+        duration-ms 180
+        curve "ease-out-quad"
+    }
 }
 
 // ── Prefer No Client-Side Decorations ────────────────────────────
@@ -156,6 +183,14 @@ window-rule {
     default-floating-position x=0 y=0 relative-to="top-left"
 }
 
+// Dropdown Scratchpad Terminal uchun suzuvchi qoida
+window-rule {
+    match app-id="^scratchpad-term$"
+    open-floating true
+    default-floating-position x=240 y=100 relative-to="top-left"
+    default-column-width { proportion 0.75; }
+}
+
 // Zenity va Quick AI muloqot darchalari uchun suzuvchi qoida
 window-rule {
     match app-id="zenity"
@@ -173,6 +208,16 @@ binds {
     Mod+Shift+Slash { show-hotkey-overlay; }
 
     // ── Apps ─────────────────────────────────────────────────────
+    Mod+grave hotkey-overlay-title="Dropdown Scratchpad (Tezkor Terminal)" {
+        spawn "/home/husniddin/.local/bin/niri-scratchpad";
+    }
+    F12 hotkey-overlay-title="Dropdown Scratchpad (Tezkor Terminal)" {
+        spawn "/home/husniddin/.local/bin/niri-scratchpad";
+    }
+    Mod+Alt+S hotkey-overlay-title="Sticky Window (Barcha ishchi stollarda ko'rinish)" {
+        spawn "/home/husniddin/.local/bin/niri-sticky" "toggle";
+    }
+
     Mod+T hotkey-overlay-title="Terminal (alacritty)" { spawn "alacritty"; }
     Mod+D hotkey-overlay-title="App Launcher" {
         spawn "/home/husniddin/.config/wofi/launcher/launcher.sh";

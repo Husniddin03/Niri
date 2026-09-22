@@ -24,13 +24,22 @@ class GestureEngine:
             dx = palm_x - x_old
             dy = palm_y - y_old
 
-            if 0.08 < dt < 0.35 and abs(dx) > 0.18 and abs(dx) > abs(dy) * 1.5:
+            if 0.08 < dt < 0.35 and abs(dx) > 0.16 and abs(dx) > abs(dy) * 1.4:
                 if dx < 0:
                     event["dynamic_action"] = "swipe_left"
                     self.last_swipe_time = now
                     self.history.clear()
                 else:
                     event["dynamic_action"] = "swipe_right"
+                    self.last_swipe_time = now
+                    self.history.clear()
+            elif 0.08 < dt < 0.35 and abs(dy) > 0.16 and abs(dy) > abs(dx) * 1.4:
+                if dy < 0:
+                    event["dynamic_action"] = "swipe_up"
+                    self.last_swipe_time = now
+                    self.history.clear()
+                else:
+                    event["dynamic_action"] = "swipe_down"
                     self.last_swipe_time = now
                     self.history.clear()
 

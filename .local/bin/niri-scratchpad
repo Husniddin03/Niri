@@ -1,0 +1,69 @@
+#!/usr/bin/env python3
+import subprocess
+import json
+import sys
+import time
+
+APP_ID = "scratchpad-term"
+HIDDEN_WORKSPACE_IDX = 99
+
+def get_windows():
+    try:
+        out = subprocess.check_output(["niri", "msg", "-j", "windows"], text=True)
+        return json.loads(out)
+    except Exception:
+        return []
+
+def get_current_workspace_idx():
+    try:
+        out = subprocess.check_output(["niri", "msg", "-j", "workspaces"], text=True)
+        workspaces = json.loads(out)
+        for ws in workspaces:
+            if ws.get("is_focused"):
+                return ws.get("idx", 1)
+    except Exception:
+        pass
+    return 1
+
+def toggle():
+    windows = get_windows()
+    scratchpad_win = None
+
+    for w in windows:
+        if w.get("app_id") == APP_ID:
+            scratchpad_win = w
+            break
+
+    # 1. Agar scratchpad hali ochilmagan bo'lsa - ochamiz
+    if not scratchpad_win:
+        # foot juda tezkor va yengil ochiladi
+        subprocess.Popen(["foot", "-a", APP_ID])
+        return
+
+    win_id = scratchpad_win.get("id")
+    is_focused = scratchpad_win.get("is_focused", False)
+    curr_ws = get_current_workspace_idx()
+
+    # 2. Agar hozir fokusda bo'lsa - yashiramiz (hidden workspace-ga jo'natamiz)
+    if is_focused:
+        subprocess.run([
+            "niri", "msg", "action",
+            "move-window-to-workspace", str(HIDDEN_WORKSPACE_IDX),
+            "--window-id", str(win_id),
+            "--focus", "false"
+        ], check=False)
+    else:
+        # 3. Agar hozir yashirin yoki orqa fonda bo'lsa - chaqiramiz va fokuslaymiz
+        subprocess.run([
+            "niri", "msg", "action",
+            "move-window-to-workspace", str(curr_ws),
+            "--window-id", str(win_id),
+            "--focus", "true"
+        ], check=False)
+        subprocess.run([
+            "niri", "msg", "action",
+            "focus-window", "--id", str(win_id)
+        ], check=False)
+
+if __name__ == "__main__":
+    toggle()
