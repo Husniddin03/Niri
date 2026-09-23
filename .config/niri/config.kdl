@@ -277,6 +277,11 @@ binds {
         spawn "/home/husniddin/.local/bin/quick-colorpicker";
     }
 
+    // ── Tizim va RAM Optimallashtirish (Cleaner) ────────────────
+    Mod+Shift+C hotkey-overlay-title="Tizim & RAM Tozalash" {
+        spawn "/home/husniddin/.local/bin/sys-clean";
+    }
+
     // ── Ekran va Ovoz yozuvchisi (Video MP4, GIF va Audio MP3) ───
     Mod+Alt+R hotkey-overlay-title="Ekran yozish (MP4 video)" {
         spawn "/home/husniddin/.local/bin/quick-recorder" "mp4";

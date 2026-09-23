@@ -32,7 +32,6 @@
   "custom/niri-ribbon": {
     "exec": "/home/husniddin/.config/waybar/scripts/niri-ribbon.py",
     "return-type": "json",
-    "interval": 1,
     "format": "{}",
     "on-click": "niri msg action toggle-overview",
     "tooltip": true

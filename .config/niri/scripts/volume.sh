@@ -22,8 +22,8 @@ esac
 
 # Ovoz holatini olish
 OUT=$(wpctl get-volume @DEFAULT_AUDIO_SINK@ 2>/dev/null)
-VOL_RAW=$(echo "$OUT" | awk '{print $2}')
-VOL=$(python3 -c "print(int(float('${VOL_RAW:-0}') * 100))" 2>/dev/null || echo "0")
+VOL=$(echo "$OUT" | awk '{printf "%d", ($2 * 100) + 0.5}')
+[ -z "$VOL" ] && VOL=0
 
 ID_FILE="/tmp/niri-osd-vol.id"
 ID=$(cat "$ID_FILE" 2>/dev/null || echo 0)

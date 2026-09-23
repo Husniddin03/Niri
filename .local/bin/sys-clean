@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+# ==============================================================================
+# Niri System & RAM Cleaner / Optimizer
+# ==============================================================================
+
+BEFORE_MEM=$(free -m | awk '/Mem:/ {print $3}')
+
+# 1. Kill dead or runaway background gradle/java daemons
+pkill -f "GradleDaemon" 2>/dev/null
+
+# 2. Clean thumbnail cache older than 7 days
+find ~/.cache/thumbnails/ -type f -atime +7 -delete 2>/dev/null
+
+# 3. Clean user journal logs older than 2 days
+journalctl --user --vacuum-time=2d >/dev/null 2>&1
+
+# 4. Sync disks
+sync
+
+# 5. Try drop caches if passwordless sudo available
+if sudo -n true 2>/dev/null; then
+    sudo sysctl -w vm.drop_caches=3 >/dev/null 2>&1
+    sudo sysctl -w vm.compact_memory=1 >/dev/null 2>&1
+fi
+
+AFTER_MEM=$(free -m | awk '/Mem:/ {print $3}')
+AVAIL_MEM=$(free -h | awk '/Mem:/ {print $7}')
+
+DIFF=$((BEFORE_MEM - AFTER_MEM))
+if [ $DIFF -gt 0 ]; then
+    MSG="${DIFF} MB RAM bo'shatildi. Mavjud: ${AVAIL_MEM}"
+else
+    MSG="Tizim toza. Mavjud RAM: ${AVAIL_MEM}"
+fi
+
+notify-send -a "Optimizer" -i preferences-system-performance "Tizim optimallashdi" "$MSG"
