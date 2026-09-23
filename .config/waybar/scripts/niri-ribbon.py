@@ -127,6 +127,18 @@ def main():
     windows = []
     workspaces = []
 
+    # Emit initial state immediately
+    try:
+        w_raw = subprocess.check_output(["niri", "msg", "-j", "windows"], text=True)
+        ws_raw = subprocess.check_output(["niri", "msg", "-j", "workspaces"], text=True)
+        windows = json.loads(w_raw)
+        workspaces = json.loads(ws_raw)
+        print(json.dumps(render_ribbon(windows, workspaces)), flush=True)
+    except (BrokenPipeError, IOError):
+        sys.exit(0)
+    except Exception:
+        pass
+
     for line in proc.stdout:
         line = line.strip()
         if not line:
@@ -169,7 +181,14 @@ def main():
 
         if needs_render:
             out = render_ribbon(windows, workspaces)
-            print(json.dumps(out), flush=True)
+            try:
+                print(json.dumps(out), flush=True)
+            except (BrokenPipeError, IOError):
+                sys.exit(0)
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except (BrokenPipeError, KeyboardInterrupt):
+        sys.exit(0)
+
