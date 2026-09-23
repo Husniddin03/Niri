@@ -1,33 +1,54 @@
-#!/bin/bash
+#!/usr/bin/env python3
+import time
+import os
+import sys
 
-INTERFACE=$(ip route | awk '/default/ {print $5; exit}')
+CACHE = "/dev/shm/net_speed.cache"
 
-RX1=$(cat /sys/class/net/$INTERFACE/statistics/rx_bytes)
-TX1=$(cat /sys/class/net/$INTERFACE/statistics/tx_bytes)
+def get_stats():
+    try:
+        with open("/proc/net/dev", "r") as f:
+            lines = f.readlines()
+        rx_total = 0
+        tx_total = 0
+        for line in lines[2:]:
+            parts = line.split()
+            if len(parts) >= 10:
+                dev = parts[0].strip(":")
+                if dev != "lo":
+                    rx_total += int(parts[1])
+                    tx_total += int(parts[9])
+        return rx_total, tx_total, time.time()
+    except Exception:
+        return 0, 0, time.time()
 
-sleep 1
+def fmt(b_sec):
+    if b_sec < 1024:
+        return f"{int(b_sec)} B/s"
+    elif b_sec < 1048576:
+        return f"{b_sec/1024:.1f} KB/s"
+    else:
+        return f"{b_sec/1048576:.1f} MB/s"
 
-RX2=$(cat /sys/class/net/$INTERFACE/statistics/rx_bytes)
-TX2=$(cat /sys/class/net/$INTERFACE/statistics/tx_bytes)
+rx2, tx2, t2 = get_stats()
 
-RX=$((RX2 - RX1))
-TX=$((TX2 - TX1))
+if os.path.exists(CACHE):
+    try:
+        with open(CACHE, "r") as f:
+            content = f.read().split()
+            rx1, tx1, t1 = float(content[0]), float(content[1]), float(content[2])
+        dt = max(0.2, t2 - t1)
+        rx_speed = max(0.0, (rx2 - rx1) / dt)
+        tx_speed = max(0.0, (tx2 - tx1) / dt)
+    except Exception:
+        rx_speed, tx_speed = 0.0, 0.0
+else:
+    rx_speed, tx_speed = 0.0, 0.0
 
-format() {
-    VALUE=$1
+try:
+    with open(CACHE, "w") as f:
+        f.write(f"{rx2} {tx2} {t2}\n")
+except Exception:
+    pass
 
-    if [ $VALUE -lt 1024 ]; then
-        echo "${VALUE} B/s"
-    elif [ $VALUE -lt 1048576 ]; then
-        echo "$((VALUE / 1024)) KB/s"
-    elif [ $VALUE -lt 1073741824 ]; then
-        echo "$(echo "scale=2; $VALUE/1024/1024" | bc) MB/s"
-    else
-        echo "$(echo "scale=2; $VALUE/1024/1024/1024" | bc) GB/s"
-    fi
-}
-
-DOWN=$(format $RX)
-UP=$(format $TX)
-
-echo " $UP  $DOWN"
+print(f" {fmt(tx_speed)}  {fmt(rx_speed)}")

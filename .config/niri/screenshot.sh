@@ -1,13 +1,23 @@
 #!/usr/bin/env bash
+# ==============================================================================
+# Flameshot Screenshot Helper for Niri (Wayland)
+# ==============================================================================
 
 export XDG_CURRENT_DESKTOP=sway
 export QT_QPA_PLATFORM=wayland
 
-TMP_FILE=$(mktemp /tmp/flameshot-XXXXXX.png)
+DIR="${HOME}/Pictures/Screenshots"
+mkdir -p "$DIR"
 
-if flameshot gui --raw > "$TMP_FILE" 2>/dev/null && [ -s "$TMP_FILE" ]; then
-    wl-copy --type image/png < "$TMP_FILE"
-    notify-send "Skrinshot olindi" "Rasm clipboard'ga nusxalandi" -i "$TMP_FILE" -t 2500
+FILENAME="Screenshot_$(date +'%Y-%m-%d_%H-%M-%S').png"
+TARGET="${DIR}/${FILENAME}"
+
+if flameshot gui --raw > "$TARGET" 2>/dev/null && [ -s "$TARGET" ]; then
+    wl-copy --type image/png < "$TARGET"
+    notify-send -a "Flameshot" -i "$TARGET" -t 3500 \
+        "Skrinshot olindi ✓" \
+        "Nusxalandi va saqlandi:\n${FILENAME}"
+else
+    # Agar bekor qilingan bo'lsa yoki bo'sh fayl yaratilgan bo'lsa, o'chiramiz
+    rm -f "$TARGET"
 fi
-
-rm -f "$TMP_FILE"

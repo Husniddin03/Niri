@@ -3,6 +3,13 @@ import subprocess
 import json
 import sys
 import os
+import signal
+
+# Clean SIGPIPE handling (prevents unhandled BrokenPipe exception on bar reload)
+try:
+    signal.signal(signal.SIGPIPE, signal.SIG_DFL)
+except Exception:
+    pass
 
 # Ilovalar uchun qisqa va chiroyli nomlar hamda ikonkalari
 APP_MAP = {

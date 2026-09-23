@@ -41,7 +41,9 @@
     "on-click": "/home/husniddin/.local/bin/wlogout-menu"
   },
   "clock": {
-    "format": "{:%H:%M  %d.%m.%y}"
+    "format": "{:%H:%M  %d.%m.%y}",
+    "tooltip-format": "<tt><small>{calendar}</small></tt>",
+    "on-click": "/home/husniddin/.local/bin/niri-control-center"
   },
   "cpu": {
     "interval": 2,
@@ -78,17 +80,20 @@
   },
   "pulseaudio": {
     "format": "{icon} {volume}%",
+    "format-muted": "󰝟 Muted",
     "format-icons": [
-      "",
-      "",
-      ""
+      "",
+      "",
+      ""
     ],
-    "on-click": "pavucontrol"
+    "on-click": "pavucontrol",
+    "on-click-right": "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"
   },
   "network": {
     "format-wifi": " {essid} ({signalStrength}%)",
     "format-ethernet": "󰈀 {ipaddr}",
-    "format-disconnected": ""
+    "format-disconnected": "󰖪 Uzilgan",
+    "on-click": "/home/husniddin/.config/wofi/network/network.sh"
   },
   "custom/net-speed": {
     "exec": "~/.config/waybar/scripts/net-speed.sh",

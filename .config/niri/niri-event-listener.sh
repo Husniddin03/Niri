@@ -1,23 +1,27 @@
-#!/bin/bash
-# Vaqtinchalik faylni o'chirish
+#!/usr/bin/env bash
+# ==============================================================================
+# Niri Overview & Waybar Auto-Visibility Event Listener
+# High-efficiency event processor (zero subprocess forks during event loop)
+# ==============================================================================
+
 rm -f /tmp/waybar_should_be_hidden
 
-# WAYBAR-GA OYLENI TIKLAB OLISHI UCHUN 1 SONIYA VAQT BERAMIZ
+# Wait briefly for Waybar to initialize
 sleep 1
 
-# Endi Waybar signalni qabul qila oladi, uni silliq yashiramiz
+# Hide waybar initially
 killall -SIGUSR1 waybar 2>/dev/null
 touch /tmp/waybar_should_be_hidden
 
-niri msg -j event-stream | while read -r line; do
-    if echo "$line" | grep -q '"OverviewOpenedOrClosed":{"is_open":true}'; then
-        # Overview ochilganda barni ko'rsatish
+niri msg -j event-stream 2>/dev/null | while read -r line; do
+    if [[ "$line" == *'"OverviewOpenedOrClosed":{"is_open":true}'* ]]; then
+        # Show waybar when overview opens
         if [ -f /tmp/waybar_should_be_hidden ]; then
             killall -SIGUSR1 waybar 2>/dev/null
             rm -f /tmp/waybar_should_be_hidden
         fi
-    elif echo "$line" | grep -q '"OverviewOpenedOrClosed":{"is_open":false}'; then
-        # Overview yopilganda barni yashirish
+    elif [[ "$line" == *'"OverviewOpenedOrClosed":{"is_open":false}'* ]]; then
+        # Hide waybar when overview closes
         if [ ! -f /tmp/waybar_should_be_hidden ]; then
             killall -SIGUSR1 waybar 2>/dev/null
             touch /tmp/waybar_should_be_hidden
