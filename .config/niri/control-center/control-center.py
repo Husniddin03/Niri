@@ -7,6 +7,10 @@ import subprocess
 import threading
 from datetime import datetime
 
+# Disable accessibility bridge to eliminate 250-500ms D-Bus timeouts
+os.environ["NO_AT_BRIDGE"] = "1"
+os.environ["GTK_A11Y"] = "none"
+
 # Ensure standard system data dirs exist in XDG_DATA_DIRS for MIME and icons
 xdg = os.environ.get("XDG_DATA_DIRS", "")
 std_dirs = "/usr/share:/usr/local/share:" + os.path.expanduser("~/.local/share")

@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 
-# Toggle if already open
-if pgrep -x wofi >/dev/null; then
-    pkill -x wofi
+# Toggle if running
+if pgrep -f "smart_clipboard.py" >/dev/null; then
+    pkill -f "smart_clipboard.py"
+    rm -f /tmp/smart-clipboard.pid
     exit 0
 fi
 
@@ -10,98 +11,4 @@ export NO_AT_BRIDGE=1
 export GTK_A11Y=none
 export XDG_DATA_DIRS="/usr/share:/usr/local/share:$HOME/.local/share:$HOME/.local/share/flatpak/exports/share:/var/lib/flatpak/exports/share:${XDG_DATA_DIRS}"
 
-CACHE_DIR="$HOME/.cache/clip_history"
-HISTORY_FILE="$CACHE_DIR/history.json"
-STYLE_FILE="$HOME/.config/wofi/clip.css"
-
-if [ ! -f "$HISTORY_FILE" ]; then
-    notify-send "📋 Nusxalash tarixi" "Hozircha nusxalar tarixi bo'sh." -u low
-    exit 0
-fi
-
-# Generate items for wofi
-MENU_ITEMS=$(python3 -c '
-import json, os, sys
-
-history_file = os.path.expanduser("~/.cache/clip_history/history.json")
-try:
-    with open(history_file, "r", encoding="utf-8") as f:
-        history = json.load(f)
-except Exception:
-    sys.exit(0)
-
-if not history:
-    sys.exit(0)
-
-for idx, item in enumerate(history):
-    t = item.get("type", "text")
-    num = idx + 1
-    if t == "image":
-        thumb = item.get("thumb") or item.get("file")
-        prev = item.get("preview", "📷 Rasm")
-        sys.stdout.write(f"img:{thumb}:text:[{num}] {prev}\n")
-    else:
-        prev = item.get("preview", "").replace("\n", " ").strip()
-        if len(prev) > 75:
-            prev = prev[:72] + "..."
-        sys.stdout.write(f"text:[{num}] 📝 {prev}\n")
-
-sys.stdout.write("text:🗑️ Tarixni tozalash (Clear History)\n")
-')
-
-[ -z "$MENU_ITEMS" ] && exit 0
-
-SELECTED=$(echo -e "$MENU_ITEMS" | wofi --show dmenu \
-    --columns 1 \
-    --define image_size=48 \
-    --lines 9 \
-    --width 620 \
-    --style "$STYLE_FILE" \
-    --prompt "Nusxalar tarixi..." \
-    --allow-images \
-    --insensitive \
-    --hide-scroll)
-
-[ -z "$SELECTED" ] && exit 0
-
-if [[ "$SELECTED" == *"Tarixni tozalash"* ]]; then
-    rm -rf "$CACHE_DIR/images"/*
-    echo "[]" > "$HISTORY_FILE"
-    notify-send "📋 Nusxalash tarixi" "Barcha nusxalar tarixi tozalandi." -u low
-    exit 0
-fi
-
-# Process selected item
-python3 -c "
-import json, os, re, subprocess, sys
-
-selected = '''$SELECTED'''
-history_file = os.path.expanduser('~/.cache/clip_history/history.json')
-
-match = re.search(r'\[(\d+)\]', selected)
-if not match:
-    sys.exit(0)
-
-idx = int(match.group(1)) - 1
-
-with open(history_file, 'r', encoding='utf-8') as f:
-    history = json.load(f)
-
-if 0 <= idx < len(history):
-    item = history[idx]
-    if item.get('type') == 'image':
-        file_path = item.get('file')
-        if os.path.exists(file_path):
-            with open(file_path, 'rb') as fp:
-                p = subprocess.Popen(['wl-copy', '--type', 'image/png'], stdin=subprocess.PIPE)
-                p.communicate(input=fp.read())
-            thumb = item.get('thumb', file_path)
-            subprocess.run(['notify-send', '🖼️ Nusxalandi', 'Rasm buferga qayta joylandi', '-i', thumb, '-u', 'low'])
-            # Auto-paste image into focused window
-            subprocess.Popen(['/home/husniddin/.local/bin/waypaste'])
-    else:
-        text = item.get('content', '')
-        subprocess.run(['wl-copy', text])
-        # Auto-paste text into focused window/input field
-        subprocess.Popen(['/home/husniddin/.local/bin/waypaste'])
-"
+exec python3 /home/husniddin/.config/wofi/clipboard/smart_clipboard.py "$@"

@@ -10,6 +10,10 @@ import urllib.error
 import threading
 import subprocess
 
+# Disable accessibility bridge to eliminate 250-500ms D-Bus timeouts
+os.environ["NO_AT_BRIDGE"] = "1"
+os.environ["GTK_A11Y"] = "none"
+
 xdg = os.environ.get("XDG_DATA_DIRS", "")
 std_dirs = "/usr/share:/usr/local/share:" + os.path.expanduser("~/.local/share")
 if "/usr/share" not in xdg:
