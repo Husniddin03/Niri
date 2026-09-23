@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 
 # Environment
+export NO_AT_BRIDGE=1
+export GTK_A11Y=none
 export XDG_DATA_DIRS="/usr/share:/usr/local/share:$HOME/.local/share:$HOME/.local/share/flatpak/exports/share:/var/lib/flatpak/exports/share:${XDG_DATA_DIRS}"
 
 # Make sure overview daemon is running

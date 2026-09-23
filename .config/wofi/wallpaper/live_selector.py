@@ -7,6 +7,10 @@ import random
 import signal
 import subprocess
 
+# Disable accessibility bridge to eliminate 250-500ms D-Bus timeouts
+os.environ["NO_AT_BRIDGE"] = "1"
+os.environ["GTK_A11Y"] = "none"
+
 # Ensure XDG_DATA_DIRS includes /usr/share for MIME & GdkPixbuf loaders
 os.environ["XDG_DATA_DIRS"] = f"/usr/share:/usr/local/share:{os.path.expanduser('~/.local/share')}:{os.environ.get('XDG_DATA_DIRS', '')}"
 

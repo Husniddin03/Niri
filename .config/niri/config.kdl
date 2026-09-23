@@ -132,6 +132,8 @@ screenshot-path "~/Pictures/Screenshots/Screenshot %Y-%m-%d %H-%M-%S.png"
 
 environment {
     xwayland-disable
+    NO_AT_BRIDGE "1"
+    GTK_A11Y "none"
 }
 
 // ── Animations ───────────────────────────────────────────────────
