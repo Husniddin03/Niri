@@ -1,11 +1,13 @@
 {
-  "output": ["eDP-1", "HDMI-A-2"],
+  "output": [
+    "eDP-1",
+    "HDMI-A-2"
+  ],
   "layer": "top",
   "position": "top",
   "mode": "hide",
   "exclusive": false,
   "passthrough": false,
-  "modifier-reset": "press",
   "gtk-layer-shell": true,
   "height": 10,
   "modules-left": [
@@ -37,7 +39,7 @@
     "tooltip": true
   },
   "custom/power": {
-    "format": "⏻",
+    "format": "\u23fb",
     "on-click": "/home/husniddin/.local/bin/wlogout-menu"
   },
   "clock": {
@@ -63,7 +65,7 @@
   },
   "disk": {
     "interval": 30,
-    "format": " {percentage_used}%",
+    "format": "\uf0a0 {percentage_used}%",
     "path": "/",
     "states": {
       "warning": 70,
@@ -73,26 +75,26 @@
   "backlight": {
     "format": "{icon} {percent}%",
     "format-icons": [
-      ""
+      "\uf185"
     ],
     "on-click": "brightnessctl set +5%",
     "on-click-right": "brightnessctl set 5%-"
   },
   "pulseaudio": {
     "format": "{icon} {volume}%",
-    "format-muted": "󰝟 Muted",
+    "format-muted": "\udb81\udf5f Muted",
     "format-icons": [
-      "",
-      "",
-      ""
+      "\uf026",
+      "\uf027",
+      "\uf028"
     ],
     "on-click": "pavucontrol",
     "on-click-right": "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"
   },
   "network": {
-    "format-wifi": " {essid} ({signalStrength}%)",
-    "format-ethernet": "󰈀 {ipaddr}",
-    "format-disconnected": "󰖪 Uzilgan",
+    "format-wifi": "\uf1eb {essid} ({signalStrength}%)",
+    "format-ethernet": "\udb80\ude00 {ipaddr}",
+    "format-disconnected": "\udb81\uddaa Uzilgan",
     "on-click": "/home/husniddin/.config/wofi/network/network.sh"
   },
   "custom/net-speed": {
@@ -106,21 +108,22 @@
       "critical": 15
     },
     "format": "{icon} {capacity}%",
-    "format-charging": " {capacity}%",
+    "format-charging": "\uf1e6 {capacity}%",
     "format-icons": [
-      "",
-      "",
-      "",
-      "",
-      ""
+      "\uf244",
+      "\uf243",
+      "\uf242",
+      "\uf241",
+      "\uf240"
     ]
   },
   "temperature": {
     "hwmon-path": "/sys/class/thermal/thermal_zone8/temp",
-    "format": "{temperatureC}°C",
+    "format": "{temperatureC}\u00b0C",
     "states": {
       "warning": 65,
       "critical": 80
     }
-  }
+  },
+  "modifier-reset": "press"
 }

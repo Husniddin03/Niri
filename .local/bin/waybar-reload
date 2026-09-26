@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+# ==============================================================================
+# Waybar Smart Reload
+# ==============================================================================
+if pgrep -x "waybar" > /dev/null; then
+    killall -SIGUSR2 waybar 2>/dev/null
+else
+    niri msg action spawn -- waybar
+fi
+
+# Qayta konfiguratsiyadan so'ng holatni zudlik bilan tekshirish
+sleep 0.35
+is_open=$(niri msg -j overview-state 2>/dev/null | jq -r '.is_open')
+layer=$(niri msg -j layers 2>/dev/null | jq -r '.[] | select(.namespace=="waybar") | .layer' | head -n 1)
+
+if [ "$is_open" = "false" ] && [ "$layer" = "Top" ]; then
+    echo "$(date +%s%3N)" > /tmp/waybar_last_toggle
+    killall -SIGUSR1 waybar 2>/dev/null
+elif [ "$is_open" = "true" ] && [ "$layer" != "Top" ]; then
+    echo "$(date +%s%3N)" > /tmp/waybar_last_toggle
+    killall -SIGUSR1 waybar 2>/dev/null
+fi

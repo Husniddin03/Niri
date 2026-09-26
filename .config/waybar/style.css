@@ -14,7 +14,6 @@
 window#waybar {
     background: rgba(25, 25, 26, 0.65); /* Yarim shaffof Apple quyuq menyu bari */
     color: #f5f5f7;
-    border-radius: 12px;
     margin: 8px 14px 0 14px; /* Ekranning chetlaridan suzib turishi uchun */
     padding: 3px 8px;
     border: 1px solid rgba(255, 255, 255, 0.08); /* Nozik shisha hoshiyasi */
@@ -26,7 +25,6 @@ window#waybar {
     color: rgba(245, 245, 247, 0.4);
     padding: 2px 10px;
     margin: 2px 1px;
-    border-radius: 6px;
     transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 

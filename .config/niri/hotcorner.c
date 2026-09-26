@@ -11,7 +11,7 @@ gboolean on_enter(GtkWidget *widget, GdkEventCrossing *event, gpointer user_data
     // Agar oxirgi marta ishlaganidan beri 800ms (0.8 soniya) o'tgan bo'lsagina ishlaydi
     if (current_time - last_trigger_time > 800) {
         last_trigger_time = current_time;
-        system("bash ~/.config/niri/overview-toggle.sh &");
+        system("niri msg action toggle-overview &");
     }
     return FALSE;
 }

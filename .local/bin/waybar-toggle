@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# ==============================================================================
+# Waybar Sync Toggle (Mod+Shift+B uchun)
+# ==============================================================================
+echo "$(date +%s%3N)" > /tmp/waybar_last_toggle
+killall -SIGUSR1 waybar 2>/dev/null

@@ -239,6 +239,7 @@ binds {
         spawn "/home/husniddin/.local/bin/niri-gestures-toggle";
     }
     Mod+B hotkey-overlay-title="Browser (firefox)"    { spawn "firefox"; }
+    Mod+Shift+B hotkey-overlay-title="Toggle Waybar"  { spawn "/home/husniddin/.local/bin/waybar-toggle"; }
     Mod+E hotkey-overlay-title="Files (nautilus)"     { spawn "nautilus"; }
     Mod+Return { spawn "foot"; }
 
@@ -246,7 +247,7 @@ binds {
         spawn "/home/husniddin/.config/wofi/wallpaper/wallpaper.sh";
     }
 
-    Mod+Tab { spawn "/home/husniddin/.config/niri/overview-toggle.sh"; }
+    Mod+Tab repeat=false { toggle-overview; }
 
     Mod+Shift+W hotkey-overlay-title="Overview Backdrop" {
         spawn "/home/husniddin/.config/wofi/wallpaper/overview_wallpaper.sh";
