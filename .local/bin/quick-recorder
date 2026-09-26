@@ -2,7 +2,7 @@
 # ==============================================================================
 # Screen Recorder (Video MP4 / GIF) with Live Floating Controller Widget
 # ==============================================================================
-export PATH="/home/husniddin/.local/bin:$PATH"
+export PATH="$HOME/.local/bin:$PATH"
 
 INFO_FILE="/tmp/quick_recorder_info.json"
 REC_PID=$(pgrep -x wf-recorder)
@@ -41,11 +41,11 @@ TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 
 if [ "$MODE" = "gif" ]; then
     OUT_FILE="$OUT_DIR/record_${TIMESTAMP}.gif"
-    /home/husniddin/.local/bin/wf-recorder -c gif -g "$GEO" -f "$OUT_FILE" >/tmp/wf_recorder.log 2>&1 &
+    $HOME/.local/bin/wf-recorder -c gif -g "$GEO" -f "$OUT_FILE" >/tmp/wf_recorder.log 2>&1 &
     WF_PID=$!
 else
     OUT_FILE="$OUT_DIR/record_${TIMESTAMP}.mp4"
-    /home/husniddin/.local/bin/wf-recorder -a -g "$GEO" -f "$OUT_FILE" >/tmp/wf_recorder.log 2>&1 &
+    $HOME/.local/bin/wf-recorder -a -g "$GEO" -f "$OUT_FILE" >/tmp/wf_recorder.log 2>&1 &
     WF_PID=$!
 fi
 
@@ -60,4 +60,4 @@ fi
 echo "{\"pid\": $WF_PID, \"file\": \"$OUT_FILE\", \"mode\": \"$MODE\"}" > "$INFO_FILE"
 
 # Launch floating on-screen controller bar (timer, pause/resume, stop)
-python3 /home/husniddin/.local/bin/recorder-bar "$MODE" "$WF_PID" "$OUT_FILE" >/tmp/recorder_bar.log 2>&1 &
+python3 $HOME/.local/bin/recorder-bar "$MODE" "$WF_PID" "$OUT_FILE" >/tmp/recorder_bar.log 2>&1 &

@@ -83,7 +83,7 @@ def main():
 
         # 3. Check for QR / Barcode first
         qr_proc = subprocess.run(
-            ["/home/husniddin/.local/bin/zbarimg", "-q", "--raw", tmp_img],
+            ["$HOME/.local/bin/zbarimg", "-q", "--raw", tmp_img],
             stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True
         )
         qr_text = qr_proc.stdout.strip()
@@ -93,8 +93,8 @@ def main():
             return
 
         # 4. OCR via Tesseract
-        tess_bin = "/home/husniddin/.local/bin/tesseract"
-        tess_data = "/home/husniddin/.local/share/tessdata"
+        tess_bin = "$HOME/.local/bin/tesseract"
+        tess_data = "$HOME/.local/share/tessdata"
         ocr_proc = subprocess.run(
             [tess_bin, tmp_img, "stdout", "--tessdata-dir", tess_data, "-l", "eng+uzb+rus+uzb_cyrl"],
             stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True

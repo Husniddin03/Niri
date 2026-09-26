@@ -1,0 +1,86 @@
+/* Asosiy oyna - Apple Glass effekti */
+window {
+    background-color: rgba(28, 28, 30, 0.82); /* Mac Dark Mode gray */
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+    font-family: "-apple-system", "SF Pro Display", "Inter", sans-serif;
+    padding: 8px;
+}
+
+/* Qidiruv maydoni - Minimalist va toza */
+#input {
+    background-color: transparent;
+    border-radius: 20px;
+    border: none;
+    padding: 16px 20px;
+    color: #ffffff;
+    font-size: 24px; /* Spotlight kabi katta shrift */
+    font-weight: 300;
+    margin: 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1); /* Pastki chiziq */
+
+    outline: none;
+    box-shadow: none;
+}
+
+/* Ilovani tanlash zonasi */
+#inner-box {
+    margin: 8px;
+}
+
+/* Har bir ilova bloki */
+#entry {
+    padding: 12px 16px;
+    margin: 2px 0;
+    border-radius: 10px;
+    background-color: transparent;
+    transition: all 0.2s ease;
+}
+
+/* Ikonka va matn tartibi */
+#entry box {
+    display: flex;
+    flex-direction: row; /* Mac'da ikonka chapda, matn o'ngda */
+    align-items: center;
+}
+
+/* Ikonka o'lchami */
+#entry image {
+    min-width: 32px;
+    min-height: 32px;
+    margin-right: 16px;
+}
+
+/* Matn ko'rinishi */
+#text {
+    color: #e0e0e0;
+    font-size: 15px;
+    font-weight: 400;
+}
+
+/* Sichqoncha borganda Mac'dagi kabi "Highlight" */
+#entry:selected {
+    background-color: rgba(60, 60, 64, 0.6); /* Yumshoq tanlangan holat */
+}
+
+#entry:selected #text {
+    color: #ffffff;
+    font-weight: 500;
+}
+
+/* Keraksiz elementlarni tozalash */
+expander,
+expander *,
+#entry expander,
+#entry expander *,
+#entry box *,
+#entry grid,
+#entry list,
+#entry row {
+    background: transparent !important;
+}
+
+label {
+    color: #e0e0e0;
+}

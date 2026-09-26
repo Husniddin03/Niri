@@ -14,8 +14,8 @@ GEO=$(slurp -d -c "#89b4faff" -b "#00000044" -w 2 2>/dev/null)
 grim -g "$GEO" "$TMP_IMG" 2>/dev/null || exit 1
 [ ! -s "$TMP_IMG" ] && exit 1
 
-TEXT=$(/home/husniddin/.local/bin/tesseract "$TMP_IMG" stdout \
-    --tessdata-dir /home/husniddin/.local/share/tessdata \
+TEXT=$($HOME/.local/bin/tesseract "$TMP_IMG" stdout \
+    --tessdata-dir $HOME/.local/share/tessdata \
     -l eng+uzb+rus+uzb_cyrl 2>/dev/null | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
 
 if [ -n "$TEXT" ]; then

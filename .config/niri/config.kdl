@@ -111,20 +111,20 @@ spawn-at-startup "waybar"
 spawn-at-startup "sh" "-c" "bash ~/.config/niri/niri-event-listener.sh"
 
 // Fon rasmi (Overview backdrop va SWWW daemon)
-spawn-at-startup "/home/husniddin/.config/niri/scripts/overview-daemon-start.sh"
+spawn-at-startup "sh" "-c" "~/.config/niri/scripts/overview-daemon-start.sh"
 spawn-at-startup "sh" "-c" "sleep 0.1 && [ \"$(cat ~/.cache/current_wallpaper 2>/dev/null)\" != 'transparent' ] && swww-daemon"
 
 // Qo'shimcha xizmatlar va yordamchilar
 spawn-at-startup "sh" "-c" "~/.config/niri/hotcorner"
 spawn-at-startup "sh" "-c" "~/.config/waybar/scripts/battery-alert.sh &"
-spawn-at-startup "/home/husniddin/.local/bin/clip-daemon"
-spawn-at-startup "/home/husniddin/.local/bin/niri-sticky" "daemon"
+spawn-at-startup "sh" "-c" "~/.local/bin/clip-daemon"
+spawn-at-startup "sh" "-c" "~/.local/bin/niri-sticky daemon"
 
 // Ekran quvvatini tejash va qulflash uchun swayidle va niri-lock
 spawn-at-startup "swayidle" "-w" \
     "timeout" "3600" "niri msg action power-off-monitors" \
     "resume" "niri msg action power-on-monitors" \
-    "timeout" "4800" "/home/husniddin/.local/bin/niri-lock" \
+    "timeout" "4800" "sh -c ~/.local/bin/niri-lock" \
     "timeout" "4800" "systemctl suspend"
 
 // ── Screenshot path ──────────────────────────────────────────────
@@ -216,105 +216,105 @@ binds {
 
     // ── Apps ─────────────────────────────────────────────────────
     Mod+grave hotkey-overlay-title="Dropdown Scratchpad (Tezkor Terminal)" {
-        spawn "/home/husniddin/.local/bin/niri-scratchpad";
+        spawn-sh "~/.local/bin/niri-scratchpad";
     }
     F12 hotkey-overlay-title="Dropdown Scratchpad (Tezkor Terminal)" {
-        spawn "/home/husniddin/.local/bin/niri-scratchpad";
+        spawn-sh "~/.local/bin/niri-scratchpad";
     }
     Mod+Alt+S hotkey-overlay-title="Sticky Window (Barcha ishchi stollarda ko'rinish)" {
-        spawn "/home/husniddin/.local/bin/niri-sticky" "toggle";
+        spawn-sh "~/.local/bin/niri-sticky toggle";
     }
 
     Mod+T hotkey-overlay-title="Terminal (alacritty)" { spawn "alacritty"; }
     Mod+D hotkey-overlay-title="App Launcher" {
-        spawn "/home/husniddin/.config/wofi/launcher/launcher.sh";
+        spawn-sh "~/.config/wofi/launcher/launcher.sh";
     }
     Mod+N hotkey-overlay-title="Control Center (Network, Hotspot, BT)" {
-        spawn "/home/husniddin/.local/bin/niri-control-center";
+        spawn-sh "~/.local/bin/niri-control-center";
     }
     Mod+V hotkey-overlay-title="Clipboard History (Nusxalar)" {
-        spawn "/home/husniddin/.local/bin/clip-menu";
+        spawn-sh "~/.local/bin/clip-menu";
     }
     Mod+G hotkey-overlay-title="Hand Gestures (Qo'l harakatlari bilan boshqaruv)" {
-        spawn "/home/husniddin/.local/bin/niri-gestures-toggle";
+        spawn-sh "~/.local/bin/niri-gestures-toggle";
     }
     Mod+B hotkey-overlay-title="Browser (firefox)"    { spawn "firefox"; }
-    Mod+Shift+B hotkey-overlay-title="Toggle Waybar"  { spawn "/home/husniddin/.local/bin/waybar-toggle"; }
+    Mod+Shift+B hotkey-overlay-title="Toggle Waybar"  { spawn-sh "~/.local/bin/waybar-toggle"; }
     Mod+E hotkey-overlay-title="Files (nautilus)"     { spawn "nautilus"; }
     Mod+Return { spawn "foot"; }
 
     Mod+W hotkey-overlay-title="Wallpaper" {
-        spawn "/home/husniddin/.config/wofi/wallpaper/wallpaper.sh";
+        spawn-sh "~/.config/wofi/wallpaper/wallpaper.sh";
     }
 
     Mod+Tab repeat=false { toggle-overview; }
 
     Mod+Shift+W hotkey-overlay-title="Overview Backdrop" {
-        spawn "/home/husniddin/.config/wofi/wallpaper/overview_wallpaper.sh";
+        spawn-sh "~/.config/wofi/wallpaper/overview_wallpaper.sh";
     }
     // Screen lock
-    Super+Alt+L hotkey-overlay-title="Lock Screen" { spawn "/home/husniddin/.local/bin/niri-lock"; }
+    Super+Alt+L hotkey-overlay-title="Lock Screen" { spawn-sh "~/.local/bin/niri-lock"; }
 
     // ── Tezkor AI Yordamchi ──────────────────────────────────────
     Mod+A hotkey-overlay-title="Tezkor AI (Ekrandan belgilab tarjima/tahlil)" {
-        spawn "/home/husniddin/.local/bin/quick-ai" "snap";
+        spawn-sh "~/.local/bin/quick-ai snap";
     }
     Mod+Shift+A hotkey-overlay-title="Tezkor AI (Savol-javob darchasi)" {
-        spawn "/home/husniddin/.local/bin/quick-ai" "ask";
+        spawn-sh "~/.local/bin/quick-ai ask";
     }
 
     // ── Offline OCR (Internetsiz ekrandan matn nusxalash) ────────
     Mod+X hotkey-overlay-title="Offline OCR (Matn nusxalash)" {
-        spawn "/home/husniddin/.local/bin/quick-ocr";
+        spawn-sh "~/.local/bin/quick-ocr";
     }
 
     // ── Smart OCR & Tarjimon + QR-kod ────────────────────────────
     Mod+Alt+X hotkey-overlay-title="Smart Tarjimon & QR-kod" {
-        spawn "/home/husniddin/.local/bin/quick-translate";
+        spawn-sh "~/.local/bin/quick-translate";
     }
 
     // ── Rang tanlagich (Pipette / Color Picker) ──────────────────
     Mod+P hotkey-overlay-title="Color Picker (HEX/RGB nusxalash)" {
-        spawn "/home/husniddin/.local/bin/quick-colorpicker";
+        spawn-sh "~/.local/bin/quick-colorpicker";
     }
 
     // ── Tizim va RAM Optimallashtirish (Cleaner) ────────────────
     Mod+Shift+C hotkey-overlay-title="Tizim & RAM Tozalash" {
-        spawn "/home/husniddin/.local/bin/sys-clean";
+        spawn-sh "~/.local/bin/sys-clean";
     }
 
     // ── Ekran va Ovoz yozuvchisi (Video MP4, GIF va Audio MP3) ───
     Mod+Alt+R hotkey-overlay-title="Ekran yozish (MP4 video)" {
-        spawn "/home/husniddin/.local/bin/quick-recorder" "mp4";
+        spawn-sh "~/.local/bin/quick-recorder mp4";
     }
     Mod+Alt+G hotkey-overlay-title="Ekran yozish (GIF)" {
-        spawn "/home/husniddin/.local/bin/quick-recorder" "gif";
+        spawn-sh "~/.local/bin/quick-recorder gif";
     }
     Mod+Alt+A hotkey-overlay-title="Ovoz yozish (MP3 audio)" {
-        spawn "/home/husniddin/.local/bin/quick-audio-record";
+        spawn-sh "~/.local/bin/quick-audio-record";
     }
 
     // ── Tungi rejim (Night Light / Ko'z himoyasi) ────────────────
     Mod+Shift+N hotkey-overlay-title="Tungi rejim (Ko'z himoyasi)" {
-        spawn "/home/husniddin/.local/bin/quick-nightlight";
+        spawn-sh "~/.local/bin/quick-nightlight";
     }
 
     // ── Ovoz orqali yozish (Diktant / Speech-to-Text) ────────────
     Mod+Space repeat=false hotkey-overlay-title="Ovoz orqali yozish (Diktant)" {
-        spawn "/home/husniddin/.local/bin/quick-voice";
+        spawn-sh "~/.local/bin/quick-voice";
     }
 
     // Screenshot (Flameshot - chizish, bo'yash, matn va belgilash imkoniyati bilan)
-    Print        { spawn "/home/husniddin/.config/niri/screenshot.sh"; }
+    Print        { spawn-sh "~/.config/niri/screenshot.sh"; }
     Shift+Print  { screenshot; }
     Ctrl+Print   { screenshot-screen; }
     Alt+Print    { screenshot-window; }
 
     // ── Volume (OSD bilan) ───────────────────────────────────────
-    XF86AudioRaiseVolume allow-when-locked=true { spawn "/home/husniddin/.config/niri/scripts/volume.sh" "up"; }
-    XF86AudioLowerVolume allow-when-locked=true { spawn "/home/husniddin/.config/niri/scripts/volume.sh" "down"; }
-    XF86AudioMute        allow-when-locked=true { spawn "/home/husniddin/.config/niri/scripts/volume.sh" "mute"; }
-    XF86AudioMicMute     allow-when-locked=true { spawn "/home/husniddin/.config/niri/scripts/volume.sh" "mic-mute"; }
+    XF86AudioRaiseVolume allow-when-locked=true { spawn-sh "~/.config/niri/scripts/volume.sh up"; }
+    XF86AudioLowerVolume allow-when-locked=true { spawn-sh "~/.config/niri/scripts/volume.sh down"; }
+    XF86AudioMute        allow-when-locked=true { spawn-sh "~/.config/niri/scripts/volume.sh mute"; }
+    XF86AudioMicMute     allow-when-locked=true { spawn-sh "~/.config/niri/scripts/volume.sh mic-mute"; }
 
     // ── Media ────────────────────────────────────────────────────
     XF86AudioPlay  allow-when-locked=true { spawn-sh "playerctl play-pause"; }
@@ -324,8 +324,8 @@ binds {
     XF86AudioNext  allow-when-locked=true { spawn-sh "playerctl next"; }
 
     // ── Brightness (OSD bilan) ───────────────────────────────────
-    XF86MonBrightnessUp   allow-when-locked=true { spawn "/home/husniddin/.config/niri/scripts/brightness.sh" "up"; }
-    XF86MonBrightnessDown allow-when-locked=true { spawn "/home/husniddin/.config/niri/scripts/brightness.sh" "down"; }
+    XF86MonBrightnessUp   allow-when-locked=true { spawn-sh "~/.config/niri/scripts/brightness.sh up"; }
+    XF86MonBrightnessDown allow-when-locked=true { spawn-sh "~/.config/niri/scripts/brightness.sh down"; }
 
     // ── Overview ─────────────────────────────────────────────────
     Mod+O repeat=false { toggle-overview; }
@@ -446,7 +446,7 @@ binds {
 
     // ── System ───────────────────────────────────────────────────
     // O'chirish menyusini ochish uchun
-    Mod+Shift+E hotkey-overlay-title="Power Menu (wlogout)" { spawn "/home/husniddin/.local/bin/wlogout-menu"; }
+    Mod+Shift+E hotkey-overlay-title="Power Menu (wlogout)" { spawn-sh "~/.local/bin/wlogout-menu"; }
     Ctrl+Alt+Delete  { quit; }
     Mod+Shift+P      { power-off-monitors; }
     Mod+Escape allow-inhibiting=false { toggle-keyboard-shortcuts-inhibit; }

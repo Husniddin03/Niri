@@ -15,7 +15,7 @@ class HeadEyeMousePlugin(BasePlugin):
         self.blink_threshold = float(self.config.get("blink_threshold", 0.58))
         self.wink_cooldown = float(self.config.get("cooldown", 0.40))
 
-        self.waymouse_bin = shutil.which("waymouse") or "/home/husniddin/.local/bin/waymouse"
+        self.waymouse_bin = shutil.which("waymouse") or os.path.expanduser("~/.local/bin/waymouse"
         self.proc = None
         self._init_proc()
 

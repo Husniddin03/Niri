@@ -4,4 +4,4 @@
 export NO_AT_BRIDGE=1
 export GTK_A11Y=none
 export XDG_DATA_DIRS="/usr/share:/usr/local/share:$HOME/.local/share:${XDG_DATA_DIRS}"
-exec python3 /home/husniddin/.config/niri/control-center/control-center.py "$@"
+exec python3 $HOME/.config/niri/control-center/control-center.py "$@"

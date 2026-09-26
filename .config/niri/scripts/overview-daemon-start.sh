@@ -5,7 +5,7 @@ ln -sf "/run/user/$USER_ID/${WAYLAND_DISPLAY:-wayland-1}" "/run/user/$USER_ID/wa
 
 if ! pgrep -f "swww-overview-daemon" > /dev/null; then
     rm -f "/run/user/$USER_ID/swww-wayland-overview.socket"
-    setsid -f env WAYLAND_DISPLAY=wayland-overview /home/husniddin/.local/bin/swww-overview-daemon > /tmp/swww-overview.log 2>&1
+    setsid -f env WAYLAND_DISPLAY=wayland-overview $HOME/.local/bin/swww-overview-daemon > /tmp/swww-overview.log 2>&1
     sleep 0.4
 fi
 

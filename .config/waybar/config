@@ -32,7 +32,7 @@
     "format": "{icon}"
   },
   "custom/niri-ribbon": {
-    "exec": "/home/husniddin/.config/waybar/scripts/niri-ribbon.py",
+    "exec": "~/.config/waybar/scripts/niri-ribbon.py",
     "return-type": "json",
     "format": "{}",
     "on-click": "niri msg action toggle-overview",
@@ -40,12 +40,12 @@
   },
   "custom/power": {
     "format": "\u23fb",
-    "on-click": "/home/husniddin/.local/bin/wlogout-menu"
+    "on-click": "~/.local/bin/wlogout-menu"
   },
   "clock": {
     "format": "{:%H:%M  %d.%m.%y}",
     "tooltip-format": "<tt><small>{calendar}</small></tt>",
-    "on-click": "/home/husniddin/.local/bin/niri-control-center"
+    "on-click": "~/.local/bin/niri-control-center"
   },
   "cpu": {
     "interval": 2,
@@ -95,7 +95,7 @@
     "format-wifi": "\uf1eb {essid} ({signalStrength}%)",
     "format-ethernet": "\udb80\ude00 {ipaddr}",
     "format-disconnected": "\udb81\uddaa Uzilgan",
-    "on-click": "/home/husniddin/.config/wofi/network/network.sh"
+    "on-click": "~/.config/wofi/network/network.sh"
   },
   "custom/net-speed": {
     "exec": "~/.config/waybar/scripts/net-speed.sh",

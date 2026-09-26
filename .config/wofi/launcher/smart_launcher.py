@@ -1149,7 +1149,7 @@ class SmartLauncher(Gtk.Window):
     def open_web_search(self, query):
         url = f"https://www.google.com/search?q={urllib.parse.quote_plus(query)}"
         flatpak_cmd = ["flatpak", "run", "org.mozilla.firefox", url]
-        local_cmd = ["/home/husniddin/.local/bin/firefox", url]
+        local_cmd = [os.path.expanduser("~/.local/bin/firefox", url]
         try:
             subprocess.Popen(flatpak_cmd, start_new_session=True)
         except Exception:

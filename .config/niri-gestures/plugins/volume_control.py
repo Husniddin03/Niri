@@ -44,8 +44,8 @@ class VolumeControlPlugin(BasePlugin):
             return
 
         if gesture == "Thumb_Up":
-            self.run_cmd(["/home/husniddin/.config/niri/scripts/volume.sh", "up"])
+            self.run_cmd([os.path.expanduser("~/.config/niri/scripts/volume.sh", "up"])
             self.last_step_time = now
         elif gesture == "Thumb_Down":
-            self.run_cmd(["/home/husniddin/.config/niri/scripts/volume.sh", "down"])
+            self.run_cmd([os.path.expanduser("~/.config/niri/scripts/volume.sh", "down"])
             self.last_step_time = now

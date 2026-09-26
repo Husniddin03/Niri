@@ -272,7 +272,7 @@ class VoiceWindow(Gtk.Window):
             subprocess.run(["wl-copy"], input=text, text=True)
 
             # Auto-paste into focused window / input field
-            subprocess.Popen(["/home/husniddin/.local/bin/waypaste"])
+            subprocess.Popen(["$HOME/.local/bin/waypaste"])
 
             # Notification preview
             preview = text[:120] + ("..." if len(text) > 120 else "")

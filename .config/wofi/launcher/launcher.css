@@ -1,0 +1,95 @@
+/* ==========================================================================
+   Wofi App Launcher — Modern Dark Glassmorphic Theme
+   ========================================================================== */
+
+window {
+    background-color: rgba(22, 23, 26, 0.97);
+    border-radius: 18px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    font-family: "SF Pro Display", "Noto Sans", sans-serif;
+    font-size: 15px;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+}
+
+#outer-box {
+    margin: 14px;
+    border: none;
+}
+
+#input {
+    background-color: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 12px;
+    padding: 12px 16px;
+    color: #ffffff;
+    font-size: 15px;
+    margin: 4px 6px 12px 6px;
+    box-shadow: none;
+}
+
+#input:focus {
+    border: 1px solid #10b981;
+    background-color: rgba(255, 255, 255, 0.11);
+}
+
+#inner-box {
+    margin: 4px;
+    border: none;
+    background-color: transparent;
+}
+
+#scroll {
+    margin: 0px;
+    border: none;
+}
+
+#entry {
+    padding: 10px 14px;
+    margin: 3px 6px;
+    border-radius: 12px;
+    color: #e5e7eb;
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    background-color: rgba(255, 255, 255, 0.02);
+    transition: all 0.15s ease;
+}
+
+#entry * {
+    background-color: transparent;
+}
+
+#entry:selected {
+    border: 1.5px solid #10b981;
+    background-color: rgba(16, 185, 129, 0.18);
+    color: #ffffff;
+}
+
+#entry:selected #text {
+    color: #ffffff;
+    font-weight: 600;
+}
+
+#text {
+    color: inherit;
+    font-size: 15px;
+}
+
+#entry image {
+    margin-right: 14px;
+    border-radius: 8px;
+}
+
+scrollbar {
+    background: transparent;
+    border: none;
+}
+
+scrollbar slider {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 6px;
+    min-width: 4px;
+    min-height: 4px;
+}
+
+scrollbar slider:hover {
+    background: rgba(255, 255, 255, 0.25);
+}

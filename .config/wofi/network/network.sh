@@ -76,11 +76,11 @@ case "$CHOSEN" in
         [ $? -ne 0 ] && exit 0
         LIMIT=${LIMIT:-10}
         
-        /home/husniddin/.local/bin/share-on "$LIMIT"
+        $HOME/.local/bin/share-on "$LIMIT"
         notify-send "📡 Hotspot (Niri)" "Hotspot yoqildi!\nSSID: Niri\nLimit: ${LIMIT} ta qurilma" -u normal
         ;;
     *"Hotspot"*"O'chirish"*)
-        /home/husniddin/.local/bin/share-off
+        $HOME/.local/bin/share-off
         notify-send "📡 Hotspot (Niri)" "Hotspot o'chirildi." -u normal
         ;;
     *"Wi-Fi"*"O'chirish"*)
@@ -105,7 +105,7 @@ case "$CHOSEN" in
         notify-send "🔵 Bluetooth" "Bluetooth xizmati ishga tushirildi." -u normal
         ;;
     *"Ulangan qurilmalar"*)
-        OUTPUT=$(/home/husniddin/.local/bin/share-list)
+        OUTPUT=$($HOME/.local/bin/share-list)
         notify-send -t 6000 "📱 Hotspot qurilmalari" "$OUTPUT" -u normal
         ;;
 esac
