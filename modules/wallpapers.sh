@@ -21,11 +21,19 @@ if [ -d "$SCRIPT_DIR/wallpapers" ]; then
     echo -e "${GREEN}✓ Fon rasmlari $TARGET_DIR ga joylandi.${NC}"
 fi
 
-# Agar birorta rasm bo'lsa, birinchi rasmni default keshga yozib qo'yish
-FIRST_WALL=$(find "$TARGET_DIR" -type f \( -name "*.jpg" -o -name "*.png" \) 2>/dev/null | head -n 1 || true)
+# Thumbnail va ikonka assetlarini keshga joylash
+CACHE_WP="$HOME/.cache/wallpaper-selector"
+mkdir -p "$CACHE_WP"
+if [ -d "$SCRIPT_DIR/.config/wofi/wallpaper/assets" ]; then
+    cp -r "$SCRIPT_DIR/.config/wofi/wallpaper/assets/"* "$CACHE_WP/" 2>/dev/null || true
+fi
+
+# Birinchi rasmni default sifatida keshga yozib qo'yish
+FIRST_WALL=$(find "$TARGET_DIR" -type f \( -name "*.jpg" -o -name "*.png" -o -name "*.webp" \) 2>/dev/null | head -n 1 || true)
 if [ -n "$FIRST_WALL" ]; then
     mkdir -p "$HOME/.cache"
     echo "$FIRST_WALL" > "$HOME/.cache/current_wallpaper"
+    echo "$FIRST_WALL" > "$HOME/.cache/current_overview_backdrop"
 fi
 
 echo -e "${GREEN}✓ Fon rasmlari moduli yakunlandi.${NC}"

@@ -47,4 +47,12 @@ fi
 chmod +x install.sh doctor.sh update.sh uninstall.sh packages/*.sh modules/*.sh 2>/dev/null || true
 
 echo -e "${GREEN}✓ Bootstrap tayyor! O'rnatuvchi ishga tushirilmoqda...${NC}\n"
-exec ./install.sh "$@"
+
+# Terminal kirishini (stdin) to'g'ri ulash (curl orqali ishga tushirilganda ham TUI checklist ishlashi uchun)
+if [ -t 0 ]; then
+    exec ./install.sh "$@"
+elif [ -e /dev/tty ]; then
+    exec ./install.sh "$@" </dev/tty
+else
+    exec ./install.sh "$@"
+fi

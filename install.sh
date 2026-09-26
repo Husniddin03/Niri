@@ -147,6 +147,18 @@ setup_configs() {
         ln -s "$SRC" "$DEST"
         echo -e "  ${GREEN}✓${NC} ~/.config/$c -> $SRC"
     done
+
+    # Systemd user services
+    if [ -d "$DOTFILES_DIR/.config/systemd/user" ]; then
+        mkdir -p "$HOME/.config/systemd/user"
+        for unit in "$DOTFILES_DIR/.config/systemd/user/"*; do
+            [ -f "$unit" ] || continue
+            uname=$(basename "$unit")
+            ln -sf "$unit" "$HOME/.config/systemd/user/$uname"
+        done
+        systemctl --user daemon-reload 2>/dev/null || true
+        echo -e "  ${GREEN}✓${NC} Systemd user xizmatlari ulandi."
+    fi
 }
 
 setup_configs

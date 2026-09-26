@@ -1,0 +1,13 @@
+[Unit]
+Description=Wayland Clipboard History Daemon
+PartOf=default.target
+
+[Service]
+Type=simple
+ExecStart=%h/.local/bin/clip-daemon
+Restart=always
+RestartSec=2
+PassEnvironment=WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE
+
+[Install]
+WantedBy=default.target

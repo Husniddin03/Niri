@@ -14,4 +14,9 @@ fi
 # Ensure icons and data directories
 export XDG_DATA_DIRS="/usr/share:/usr/local/share:$HOME/.local/share:$HOME/.local/share/flatpak/exports/share:/var/lib/flatpak/exports/share:${XDG_DATA_DIRS}"
 
-exec python3 $HOME/.config/wofi/launcher/smart_launcher.py "$@"
+# Launch smart launcher with automatic graceful fallback to wofi if anything fails
+if [ -f "$HOME/.config/wofi/launcher/smart_launcher.py" ]; then
+    python3 "$HOME/.config/wofi/launcher/smart_launcher.py" "$@" || exec wofi --show drun
+else
+    exec wofi --show drun
+fi

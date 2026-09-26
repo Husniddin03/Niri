@@ -174,21 +174,39 @@ class LiveWallpaperSelector(Gtk.Window):
         self.user_navigated = True
 
     def load_initial_cards(self):
+        os.makedirs(CACHE_DIR, exist_ok=True)
+
         # 1. Shuffle card
         shuffle_icon = os.path.join(CACHE_DIR, "000_random_tasodifiy_shuffle.png")
+        bundled_shuffle = os.path.expanduser("~/.config/wofi/wallpaper/assets/shuffle_thumbnail.png")
+        if not os.path.isfile(shuffle_icon):
+            if os.path.isfile(bundled_shuffle):
+                try:
+                    import shutil
+                    shutil.copy2(bundled_shuffle, shuffle_icon)
+                except Exception:
+                    shuffle_icon = bundled_shuffle
         if os.path.isfile(shuffle_icon):
             self.add_card("shuffle", "Tasodifiy", shuffle_icon)
 
         # 2. Transparent card (only for desktop wallpaper)
         if self.mode == "wallpaper":
             trans_icon = os.path.join(CACHE_DIR, "001_transparent_shaffof.png")
+            bundled_trans = os.path.expanduser("~/.config/wofi/wallpaper/assets/transparent_thumbnail.png")
+            if not os.path.isfile(trans_icon):
+                if os.path.isfile(bundled_trans):
+                    try:
+                        import shutil
+                        shutil.copy2(bundled_trans, trans_icon)
+                    except Exception:
+                        trans_icon = bundled_trans
             if os.path.isfile(trans_icon):
                 self.add_card("transparent", "Shaffof", trans_icon)
 
         # 3. Queue all wallpapers from WP_DIR
         if os.path.isdir(WP_DIR):
-            all_files = sorted([f for f in os.listdir(WP_DIR) if f.lower().endswith((".jpg", ".jpeg", ".png"))])
-            # Load first 24 wallpapers immediately so UI opens instantly with images displayed
+            all_files = sorted([f for f in os.listdir(WP_DIR) if f.lower().endswith((".jpg", ".jpeg", ".png", ".webp"))])
+            # Load first batch immediately so UI opens with images displayed
             first_batch = all_files[:24]
             self.pending_wallpapers = all_files[24:]
 
@@ -196,27 +214,25 @@ class LiveWallpaperSelector(Gtk.Window):
                 base = os.path.splitext(wp)[0]
                 thumb = os.path.join(CACHE_DIR, base + ".png")
                 full_path = os.path.join(WP_DIR, wp)
-                if os.path.isfile(thumb):
-                    self.add_card("image", full_path, thumb, name=base)
+                self.add_card("image", full_path, thumb, name=base)
 
-            # Schedule loading of remaining wallpapers in background chunks of 24
+            # Schedule loading of remaining wallpapers smoothly in background
             if self.pending_wallpapers:
-                self.idle_loader_id = GLib.idle_add(self.load_background_batch)
+                self.idle_loader_id = GLib.timeout_add(30, self.load_background_batch)
 
     def load_background_batch(self):
         if not self.pending_wallpapers:
             self.idle_loader_id = None
             return False
 
-        chunk = self.pending_wallpapers[:24]
-        self.pending_wallpapers = self.pending_wallpapers[24:]
+        chunk = self.pending_wallpapers[:12]
+        self.pending_wallpapers = self.pending_wallpapers[12:]
 
         for wp in chunk:
             base = os.path.splitext(wp)[0]
             thumb = os.path.join(CACHE_DIR, base + ".png")
             full_path = os.path.join(WP_DIR, wp)
-            if os.path.isfile(thumb):
-                self.add_card("image", full_path, thumb, name=base)
+            self.add_card("image", full_path, thumb, name=base)
 
         return bool(self.pending_wallpapers)
 
@@ -227,10 +243,31 @@ class LiveWallpaperSelector(Gtk.Window):
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
         box.set_halign(Gtk.Align.CENTER)
 
-        try:
-            pb = GdkPixbuf.Pixbuf.new_from_file(thumb_path)
-            img = Gtk.Image.new_from_pixbuf(pb)
-        except Exception:
+        img = None
+        # Try loading pre-existing thumbnail
+        if thumb_path and os.path.isfile(thumb_path):
+            try:
+                pb = GdkPixbuf.Pixbuf.new_from_file(thumb_path)
+                img = Gtk.Image.new_from_pixbuf(pb)
+            except Exception:
+                pass
+
+        # If no thumbnail exists, load and scale source wallpaper directly
+        if img is None and target_path and os.path.isfile(target_path):
+            try:
+                pb = GdkPixbuf.Pixbuf.new_from_file_at_scale(target_path, 280, 160, False)
+                img = Gtk.Image.new_from_pixbuf(pb)
+                # Cache thumbnail to disk for fast subsequent loads
+                if thumb_path:
+                    try:
+                        os.makedirs(os.path.dirname(thumb_path), exist_ok=True)
+                        pb.savev(thumb_path, "png", [], [])
+                    except Exception:
+                        pass
+            except Exception:
+                pass
+
+        if img is None:
             img = Gtk.Image()
 
         img.set_name("img")
@@ -320,11 +357,18 @@ class LiveWallpaperSelector(Gtk.Window):
         return [item for item in self.cards_data if item["child"].get_visible()]
 
     def on_search_changed(self, entry):
-        if self.pending_wallpapers:
-            while self.pending_wallpapers:
-                self.load_background_batch()
-
         text = entry.get_text().strip().lower()
+
+        # If searching and there are pending items matching query, load a batch
+        if self.pending_wallpapers and text:
+            matching = [wp for wp in self.pending_wallpapers if text in wp.lower()][:18]
+            for wp in matching:
+                self.pending_wallpapers.remove(wp)
+                base = os.path.splitext(wp)[0]
+                thumb = os.path.join(CACHE_DIR, base + ".png")
+                full_path = os.path.join(WP_DIR, wp)
+                self.add_card("image", full_path, thumb, name=base)
+
         first_visible = None
         for item in self.cards_data:
             match = (not text) or (text in item["name"]) or (item["type"] in ["shuffle", "transparent"])

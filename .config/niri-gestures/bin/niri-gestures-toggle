@@ -1,12 +1,56 @@
-#!/bin/bash
+#!/usr/bin/env bash
+# ==============================================================================
+# Niri Hand Gestures Toggle Daemon Controller
+# ==============================================================================
 
-systemctl --user daemon-reload
+# Systemd muhit o'zgaruvchilarini yangilash
+systemctl --user import-environment WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE 2>/dev/null || true
+systemctl --user daemon-reload 2>/dev/null || true
 
 if systemctl --user is-active niri-gestures >/dev/null 2>&1; then
     systemctl --user stop niri-gestures
     notify-send -u normal -a "Niri Gestures" "🖐️ Qo'l boshqaruvi" "To'xtatildi (Kamera o'chirildi)" -i camera-off
 else
+    # 1. Kamera qurilmasi borligini tekshirish
+    if ! ls /dev/video* >/dev/null 2>&1; then
+        notify-send -u critical -a "Niri Gestures" "⚠️ Kamera topilmadi" "Tizimda hech qanday veb-kamera (/dev/video*) aniqlanmadi." -i camera-error
+        exit 1
+    fi
+
+    # 2. Virtual muhit mavjudligini tekshirish
+    if [ ! -f "$HOME/.config/niri-gestures/.venv/bin/python" ]; then
+        notify-send -u critical -a "Niri Gestures" "⚠️ Virtual muhit yo'q" "~/.config/niri-gestures/.venv muhiti o'rnatilmagan." -i dialog-error
+        exit 1
+    fi
+
+    # 3. Service faylini tekshirish va kerak bo'lsa tiklash
+    if [ ! -f "$HOME/.config/systemd/user/niri-gestures.service" ]; then
+        mkdir -p "$HOME/.config/systemd/user"
+        cat > "$HOME/.config/systemd/user/niri-gestures.service" << 'EOF'
+[Unit]
+Description=Niri Holographic Hand Gestures Daemon
+PartOf=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=%h/.config/niri-gestures/.venv/bin/python %h/.config/niri-gestures/daemon.py
+Restart=on-failure
+RestartSec=1
+PassEnvironment=WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE
+
+[Install]
+WantedBy=graphical-session.target
+EOF
+        systemctl --user daemon-reload 2>/dev/null || true
+    fi
+
     systemctl --user reset-failed niri-gestures 2>/dev/null || true
     systemctl --user start niri-gestures
-    notify-send -u normal -a "Niri Gestures" "🖐️ Qo'l boshqaruvi" "Faollashdi (Kamera yoqildi)" -i camera-web
+
+    sleep 0.6
+    if systemctl --user is-active niri-gestures >/dev/null 2>&1; then
+        notify-send -u normal -a "Niri Gestures" "🖐️ Qo'l boshqaruvi" "Faollashdi (Kamera yoqildi)" -i camera-web
+    else
+        notify-send -u critical -a "Niri Gestures" "⚠️ Xatolik yuz berdi" "Kamerani ishga tushirib bo'lmadi.\nKamera boshqa ilovada band bo'lishi mumkin." -i camera-error
+    fi
 fi

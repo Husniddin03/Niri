@@ -55,6 +55,17 @@ PACKAGES=(
     pavucontrol
     wireplumber
     pipewire
+    python3
+    python3-pip
+    python3-venv
+    python3-gi
+    python3-gi-cairo
+    python3-cairo
+    gir1.2-gtk-3.0
+    gir1.2-gtklayershell-0.1
+    gir1.2-gdkpixbuf-2.0
+    gir1.2-pango-1.0
+    v4l-utils
     fontconfig
 )
 

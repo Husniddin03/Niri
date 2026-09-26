@@ -45,6 +45,13 @@ PACKAGES=(
     wireplumber
     pipewire
     fontconfig
+    python3
+    python3-pip
+    python3-gobject
+    python3-cairo
+    gtk-layer-shell
+    gdk-pixbuf2
+    v4l-utils
 )
 
 # Niri COPR omborini yoqish

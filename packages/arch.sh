@@ -46,6 +46,13 @@ PACKAGES=(
     wireplumber
     pipewire
     fontconfig
+    python
+    python-pip
+    python-gobject
+    python-cairo
+    gdk-pixbuf2
+    pango
+    v4l-utils
 )
 
 AUR_PACKAGES=(
