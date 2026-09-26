@@ -56,7 +56,7 @@ fi
 # 5. Niri va Waybar'ni qayta yuklash
 echo -e "${BLUE}🔄 Tizim qayta yuklanmoqda...${NC}"
 if command -v niri >/dev/null 2>&1; then
-    niri msg reload-config 2>/dev/null || true
+    niri msg action load-config-file 2>/dev/null || true
 fi
 
 if command -v waybar-reload >/dev/null 2>&1; then

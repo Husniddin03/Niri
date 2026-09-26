@@ -10,7 +10,7 @@ class AirMousePlugin(BasePlugin):
 
     def __init__(self, config=None):
         super().__init__(config)
-        self.waymouse_bin = shutil.which("waymouse") or os.path.expanduser("~/.local/bin/waymouse"
+        self.waymouse_bin = shutil.which("waymouse") or os.path.expanduser("~/.local/bin/waymouse")
         self.proc = None
         self._init_proc()
 

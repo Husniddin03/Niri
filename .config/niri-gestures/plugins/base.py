@@ -12,7 +12,7 @@ class BasePlugin:
         self.enabled = self.config.get("enabled", True)
         self.last_trigger_time = 0.0
         self.cooldown = float(self.config.get("cooldown", 0.5))
-        self.waykey_bin = shutil.which("waykey") or os.path.expanduser("~/.local/bin/waykey"
+        self.waykey_bin = shutil.which("waykey") or os.path.expanduser("~/.local/bin/waykey")
 
     def can_trigger(self, min_interval=None) -> bool:
         interval = min_interval if min_interval is not None else self.cooldown

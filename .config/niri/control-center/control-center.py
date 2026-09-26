@@ -369,7 +369,7 @@ class ControlCenterWindow(Gtk.Window):
         threading.Thread(target=self._apply_limit_thread, args=(val,), daemon=True).start()
 
     def _apply_limit_thread(self, limit):
-        run_cmd(fos.path.expanduser("~/.local/bin/share-on {limit}")
+        run_cmd(f"{os.path.expanduser('~/.local/bin/share-on')} {limit}")
         GLib.idle_add(self.refresh_all_status)
         run_cmd(f"notify-send '📡 Hotspot (Niri)' 'Limit {limit} ta qurilmaga oʻzgartirildi' -u normal")
 
@@ -382,10 +382,10 @@ class ControlCenterWindow(Gtk.Window):
 
     def _toggle_hotspot_thread(self, enable, limit):
         if enable:
-            run_cmd(fos.path.expanduser("~/.local/bin/share-on {limit}")
+            run_cmd(f"{os.path.expanduser('~/.local/bin/share-on')} {limit}")
             run_cmd("notify-send '📡 Hotspot (Niri)' 'Hotspot muvaffaqiyatli yoqildi' -u normal")
         else:
-            run_cmd(os.path.expanduser("~/.local/bin/share-off")
+            run_cmd(f"{os.path.expanduser('~/.local/bin/share-off')}")
             run_cmd("notify-send '📡 Hotspot (Niri)' 'Hotspot oʻchirildi' -u normal")
         GLib.idle_add(self.refresh_all_status)
 

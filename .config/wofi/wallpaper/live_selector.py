@@ -76,7 +76,7 @@ def ensure_swww_overview():
     if not os.path.exists(link):
         subprocess.run(["ln", "-sf", f"/run/user/{uid}/{os.environ.get('WAYLAND_DISPLAY', 'wayland-1')}", link], check=False)
     if not os.path.exists(sock) or not subprocess.run(["pgrep", "-f", "swww-overview-daemon"], capture_output=True).stdout:
-        subprocess.Popen([os.path.expanduser("~/.config/niri/scripts/overview-daemon-start.sh"])
+        subprocess.Popen([os.path.expanduser("~/.config/niri/scripts/overview-daemon-start.sh")])
         for _ in range(30):
             if os.path.exists(sock):
                 break

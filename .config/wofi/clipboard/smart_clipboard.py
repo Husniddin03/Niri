@@ -684,16 +684,16 @@ class SmartClipboard(Gtk.Window):
             if file_path and os.path.exists(file_path):
                 subprocess.Popen(f"wl-copy -t image/png < '{file_path}'", shell=True)
                 subprocess.run(["notify-send", "📷 Rasm nusxalandi", "Xotiraga nusxalandi.", "-u", "low"])
-                if os.path.exists(os.path.expanduser("~/.local/bin/waypaste"):
-                    subprocess.Popen([os.path.expanduser("~/.local/bin/waypaste"])
+                if os.path.exists(os.path.expanduser("~/.local/bin/waypaste")):
+                    subprocess.Popen([os.path.expanduser("~/.local/bin/waypaste")])
         else:
             content = item.get("content", "")
             if content:
                 p = subprocess.Popen(["wl-copy"], stdin=subprocess.PIPE, text=True)
                 p.communicate(input=content)
                 subprocess.run(["notify-send", "📋 Nusxalandi", f"{content[:60]}...", "-u", "low"])
-                if os.path.exists(os.path.expanduser("~/.local/bin/waypaste"):
-                    subprocess.Popen([os.path.expanduser("~/.local/bin/waypaste"])
+                if os.path.exists(os.path.expanduser("~/.local/bin/waypaste")):
+                    subprocess.Popen([os.path.expanduser("~/.local/bin/waypaste")])
 
         self.close_launcher()
 
