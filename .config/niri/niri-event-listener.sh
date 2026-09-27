@@ -8,22 +8,18 @@
 exec 200>/tmp/niri-waybar-event-listener.lock
 flock -n 200 || exit 0
 
-STATE_FILE="/tmp/waybar_state"
-
 show_waybar() {
-    local cur
-    cur=$(cat "$STATE_FILE" 2>/dev/null || echo "hidden")
-    if [ "$cur" != "shown" ]; then
-        echo "shown" > "$STATE_FILE"
+    local layer
+    layer=$(niri msg -j layers 2>/dev/null | jq -r '.[] | select(.namespace=="waybar") | .layer' | head -n 1)
+    if [ "$layer" != "Top" ]; then
         killall -SIGUSR1 waybar 2>/dev/null
     fi
 }
 
 hide_waybar() {
-    local cur
-    cur=$(cat "$STATE_FILE" 2>/dev/null || echo "hidden")
-    if [ "$cur" != "hidden" ]; then
-        echo "hidden" > "$STATE_FILE"
+    local layer
+    layer=$(niri msg -j layers 2>/dev/null | jq -r '.[] | select(.namespace=="waybar") | .layer' | head -n 1)
+    if [ "$layer" = "Top" ]; then
         killall -SIGUSR1 waybar 2>/dev/null
     fi
 }
@@ -38,13 +34,17 @@ sync_state() {
     fi
 }
 
-# Waybar ishga tushishini kutish va boshlang'ich holatni o'rnatish
-sleep 0.5
-# Waybar mode: hide bilan boshlangani sababli boshlang'ich holat: hidden
-echo "hidden" > "$STATE_FILE"
+# 1. Waybar to'liq ishga tushib, surface yaratishini kutish (5 soniyagacha)
+for i in {1..50}; do
+    layer=$(niri msg -j layers 2>/dev/null | jq -r '.[] | select(.namespace=="waybar") | .layer' | head -n 1)
+    [ -n "$layer" ] && break
+    sleep 0.1
+done
+
+# 2. Boshlang'ich holatni to'g'rilash (boot paytida Waybar oynalar ustida qolib ketmasligi uchun)
 sync_state
 
-# Event stream: Overview ochilganda/yopilganda darhol 0ms ichida reaksiya berish
+# 3. Event stream: Overview ochilganda/yopilganda darhol 0ms ichida reaksiya berish
 while true; do
     niri msg -j event-stream 2>/dev/null | while read -r line; do
         if [[ "$line" == *'"OverviewOpenedOrClosed":{"is_open":true}'* ]]; then
