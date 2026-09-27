@@ -1,0 +1,14 @@
+[Unit]
+Description=Niri & Waybar Realtime Sync Daemon
+PartOf=graphical-session.target
+After=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 %h/.config/niri/niri-waybar-sync.py
+Restart=always
+RestartSec=1
+PassEnvironment=WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE
+
+[Install]
+WantedBy=graphical-session.target
