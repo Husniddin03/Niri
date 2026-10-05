@@ -229,6 +229,9 @@ binds {
     Mod+D hotkey-overlay-title="App Launcher" {
         spawn-sh "~/.config/wofi/launcher/launcher.sh";
     }
+    Mod+Shift+D hotkey-overlay-title="Dismiss Notifications (Bildirishnomalarni yopish)" {
+        spawn-sh "dunstctl close-all 2>/dev/null; makoctl dismiss -a 2>/dev/null";
+    }
     Mod+N hotkey-overlay-title="Control Center (Network, Hotspot, BT)" {
         spawn-sh "~/.local/bin/niri-control-center";
     }

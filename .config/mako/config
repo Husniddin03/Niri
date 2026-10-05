@@ -26,7 +26,8 @@ icon-path=/usr/share/icons/Papirus-Dark:/usr/share/icons/Papirus:/usr/share/icon
 
 # Taymer va harakatlar
 default-timeout=5000
-ignore-timeout=0
+ignore-timeout=1
+max-visible=5
 
 format=<b><span size="larger">%s</span></b>\n%b
 
@@ -46,7 +47,7 @@ default-timeout=5000
 [urgency=critical]
 border-color=#ef4444
 text-color=#ffffff
-default-timeout=0
+default-timeout=8000
 
 # OSD (Ovoz va Yorug'lik indikatori)
 [category=osd]

@@ -1,48 +1,42 @@
 #!/usr/bin/env python3
 # ==============================================================================
 # Niri & Waybar Realtime Sync Daemon
-# Mathematically guaranteed, ultra-low latency, non-inverting synchronizer
+# Strictly Idempotent, Zero-Flicker, Non-Inverting Event Synchronizer
 # ==============================================================================
 
 import os
 import sys
 import time
 import json
+import fcntl
 import signal
 import threading
 import subprocess
 
-PID_FILE = "/tmp/niri-waybar-sync.pid"
+LOCK_FILE = f"/run/user/{os.getuid()}/niri-waybar-sync.lock"
+lock_fd = None
 stop_event = threading.Event()
 action_lock = threading.Lock()
-last_action_time = 0.0
 
-def single_instance():
-    if os.path.exists(PID_FILE):
-        try:
-            with open(PID_FILE, "r") as f:
-                old_pid = int(f.read().strip())
-            os.kill(old_pid, signal.SIGTERM)
-            time.sleep(0.05)
-        except Exception:
-            pass
-        try:
-            os.remove(PID_FILE)
-        except Exception:
-            pass
+def acquire_single_instance():
+    global lock_fd
     try:
-        with open(PID_FILE, "w") as f:
-            f.write(str(os.getpid()))
-    except Exception:
-        pass
+        lock_fd = open(LOCK_FILE, "w")
+        fcntl.flock(lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        lock_fd.write(str(os.getpid()))
+        lock_fd.flush()
+    except (IOError, OSError):
+        # Another instance is already running
+        sys.exit(0)
 
 def cleanup():
     stop_event.set()
-    if os.path.exists(PID_FILE):
+    global lock_fd
+    if lock_fd:
         try:
-            with open(PID_FILE, "r") as f:
-                if int(f.read().strip()) == os.getpid():
-                    os.remove(PID_FILE)
+            fcntl.flock(lock_fd, fcntl.LOCK_UN)
+            lock_fd.close()
+            os.remove(LOCK_FILE)
         except Exception:
             pass
 
@@ -50,9 +44,9 @@ def signal_handler(sig, frame):
     cleanup()
     sys.exit(0)
 
-def get_overview_state():
+def get_overview_state() -> bool:
     try:
-        res = subprocess.run(["niri", "msg", "-j", "overview-state"], capture_output=True, text=True, timeout=0.5)
+        res = subprocess.run(["niri", "msg", "-j", "overview-state"], capture_output=True, text=True, timeout=0.4)
         if res.returncode == 0:
             return json.loads(res.stdout).get("is_open", False)
     except Exception:
@@ -61,7 +55,7 @@ def get_overview_state():
 
 def get_waybar_layer():
     try:
-        res = subprocess.run(["niri", "msg", "-j", "layers"], capture_output=True, text=True, timeout=0.5)
+        res = subprocess.run(["niri", "msg", "-j", "layers"], capture_output=True, text=True, timeout=0.4)
         if res.returncode == 0:
             data = json.loads(res.stdout)
             for item in data:
@@ -71,40 +65,38 @@ def get_waybar_layer():
         pass
     return None
 
-def enforce_sync(desired_open: bool):
+def enforce_target_layer(target_layer: str, max_wait: float = 0.5) -> bool:
     """
-    Enforces that Waybar is on Top if desired_open is True,
-    and NOT on Top (Bottom/hidden) if desired_open is False.
-    Waybar layer switch takes ~15ms.
+    STRICTLY IDEMPOTENT:
+    If Waybar is already at target_layer, does NOTHING (sends 0 signals).
+    If Waybar is not at target_layer, sends ONE SIGUSR1 and waits until
+    niri reports the transition is complete.
     """
-    global last_action_time
     with action_lock:
-        now = time.time()
-        # Cooldown of 60ms to prevent double-signals while Waybar switches in 15ms
-        if now - last_action_time < 0.06:
-            time.sleep(0.06 - (now - last_action_time))
+        current = get_waybar_layer()
+        if current is None:
+            return False  # Waybar not running or no surface yet
+        if current == target_layer:
+            return True   # Already in desired state, do nothing!
 
-        layer = get_waybar_layer()
-        if layer is None:
-            return
+        # Send exactly one toggle signal
+        subprocess.run(["killall", "-SIGUSR1", "waybar"], capture_output=True)
 
-        is_visible = (layer == "Top")
-        if is_visible != desired_open:
-            last_action_time = time.time()
-            subprocess.run(["killall", "-SIGUSR1", "waybar"], capture_output=True)
+        # Wait until Waybar confirms new layer
+        t0 = time.time()
+        while time.time() - t0 < max_wait:
+            if get_waybar_layer() == target_layer:
+                return True
+            time.sleep(0.015)
 
-def watchdog_worker():
-    """Safety net: checks every 250ms and instantly corrects any desync"""
-    while not stop_event.is_set():
-        try:
-            is_open = get_overview_state()
-            enforce_sync(is_open)
-        except Exception:
-            pass
-        stop_event.wait(0.25)
+        return (get_waybar_layer() == target_layer)
+
+def sync_with_overview(is_open: bool):
+    target = "Top" if is_open else "Bottom"
+    enforce_target_layer(target)
 
 def stream_worker():
-    """Event-driven: receives instant 0ms notification when Overview opens or closes"""
+    """Event-driven: receives instant 0ms events from Niri IPC"""
     while not stop_event.is_set():
         proc = None
         try:
@@ -125,7 +117,7 @@ def stream_worker():
                     event = json.loads(line)
                     if "OverviewOpenedOrClosed" in event:
                         is_open = event["OverviewOpenedOrClosed"].get("is_open", False)
-                        enforce_sync(is_open)
+                        sync_with_overview(is_open)
                 except Exception:
                     pass
         except Exception:
@@ -139,21 +131,27 @@ def stream_worker():
                     pass
         if not stop_event.is_set():
             stop_event.wait(0.5)
+            # Reconnect sync
+            sync_with_overview(get_overview_state())
 
 def main():
-    single_instance()
+    acquire_single_instance()
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
     signal.signal(signal.SIGHUP, signal_handler)
 
-    # Initial enforcement
-    enforce_sync(get_overview_state())
+    # Initial wait for Waybar to launch and create surface (up to 3 seconds)
+    for _ in range(30):
+        if get_waybar_layer() is not None:
+            break
+        time.sleep(0.1)
 
+    # Enforce initial state (Bottom if overview is closed)
+    sync_with_overview(get_overview_state())
+
+    # Start event stream
     t_stream = threading.Thread(target=stream_worker, daemon=True)
-    t_watchdog = threading.Thread(target=watchdog_worker, daemon=True)
-
     t_stream.start()
-    t_watchdog.start()
 
     while not stop_event.is_set():
         time.sleep(1)

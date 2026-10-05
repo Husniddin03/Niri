@@ -1,14 +1,5 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# Waybar Sync Toggle (Mod+Shift+B uchun)
+# Waybar Toggle (Mod+Shift+B uchun)
 # ==============================================================================
-STATE_FILE="/tmp/waybar_state"
-cur=$(cat "$STATE_FILE" 2>/dev/null || echo "hidden")
-
-if [ "$cur" = "shown" ]; then
-    echo "hidden" > "$STATE_FILE"
-else
-    echo "shown" > "$STATE_FILE"
-fi
-
 killall -SIGUSR1 waybar 2>/dev/null
